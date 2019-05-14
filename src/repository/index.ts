@@ -1,8 +1,7 @@
-import { db } from '../builtin_services/storage'
-import { PostgresSQLSettings, DatabaseStructure } from '../builtin_services/storage/postgresql/base'
+import { Storage, StorageSettings, PostgresDatabaseStructure  } from '../builtin_services/storage'
 import * as utils from 'sardines-utils'
 
-const dbStruct: DatabaseStructure = {
+const postgresDBStruct: PostgresDatabaseStructure = {
     service: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
         create_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
@@ -31,27 +30,32 @@ export interface ServiceIdentity {
     version?: string
 }
 
-export class Repository {
-    private db: any;
 
-    constructor(databaseSettings: PostgresSQLSettings) {
-        this.db = new db.Postgres(databaseSettings, dbStruct)
+export interface RepositorySettings {
+    storage: StorageSettings
+}
+
+export class Repository {
+    private store: any;
+
+    constructor(repoSettings: RepositorySettings) {
+        this.store = Storage(repoSettings.storage, postgresDBStruct)
     }
 
     async registerService(serviceSettings: ServiceSettings) {
-        const res = await this.db.set('service', serviceSettings)
+        const res = await this.store.set('service', serviceSettings)
         if (res.rowCount === 1) return true
         else throw utils.unifyErrMesg(`Failed to store service ${serviceSettings.owner}/${serviceSettings.name}@${serviceSettings.version}`, 'sardines', 'repository')
     }
 
     async queryService(identity: ServiceIdentity) {
-        const res = await this.db.get('service', identity)
+        const res = await this.store.get('service', identity)
         if (res) {
             let serviceList = []
             if (!Array.isArray(res)) serviceList.push({id: res.id})
             else serviceList = res.map((item:any) => ({id: item.id}))
             for (let service of serviceList) {
-                await this.db.set('service', {last_access_on: 'CURRENT_TIMESTAMP'}, service)
+                await this.store.set('service', {last_access_on: 'CURRENT_TIMESTAMP'}, service)
             }
         }
         return res

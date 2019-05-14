@@ -1,12 +1,17 @@
 import { Repository } from './repository'
 
 const repoInst = new Repository({
-    host: 'localhost',
-    port: 5432,
-    database: 'sardines_test',
-    schema: 'test',
-    user: 'sardines',
-    password: 'Sardines2019'
+    storage: {
+        type: 'postgres',
+        settings: {
+            host: 'localhost',
+            port: 5432,
+            database: 'sardines_test',
+            schema: 'test',
+            user: 'sardines',
+            password: 'Sardines2019'
+        }
+    }
 })
 
 // repoInst.registerService({
