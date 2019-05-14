@@ -11,7 +11,8 @@ const postgresDBStruct: PostgresDatabaseStructure = {
         version: 'VARCHAR(20)',
         source: 'VARCHAR(300)',
         provider_settings: 'JSONB', // Array, enlist all possible provider/driver pairs and provider settings
-        init_params: 'JSONB'   // service used init parameters
+        init_params: 'JSONB',   // service used init parameters
+        UNIQUE: ['owner', 'name', 'version']
     }
 }
 
@@ -43,9 +44,13 @@ export class Repository {
     }
 
     async registerService(serviceSettings: ServiceSettings) {
-        const res = await this.store.set('service', serviceSettings)
+        let res = await this.queryService({ owner: serviceSettings.owner, name: serviceSettings.name, version: serviceSettings.version})
+        if (res) {
+            throw utils.unifyErrMesg(`service [${serviceSettings.owner}/${serviceSettings.name}@${serviceSettings.version}] already exists`, utils.logo, 'repository')
+        }
+        res = await this.store.set('service', serviceSettings)
         if (res.rowCount === 1) return true
-        else throw utils.unifyErrMesg(`Failed to store service ${serviceSettings.owner}/${serviceSettings.name}@${serviceSettings.version}`, 'sardines', 'repository')
+        else throw utils.unifyErrMesg(`Failed to store service [${serviceSettings.owner}/${serviceSettings.name}@${serviceSettings.version}]`, utils.logo, 'repository')
     }
 
     async queryService(identity: ServiceIdentity) {

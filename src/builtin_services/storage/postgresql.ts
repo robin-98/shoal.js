@@ -4,6 +4,10 @@ import { StorageBase } from './base'
 
 export interface TableStructure {
     CONSTRAINTS?: string[]
+    UNIQUE?: string[]
+    PRIMARY?: string[]
+    CHECK?: string
+    REFERENCES?: string
     [column: string]: string|string[]|undefined
 }
 
@@ -20,7 +24,15 @@ export interface ServerSettings {
     schema?: string
 }
 
-const builtInKeywords = {
+const DDLKeywords: {[key: string]: boolean} = {
+    'CONSTRAINTS': true,
+    'UNIQUE': true,
+    'CHECK': true,
+    'PRIMARY': true,
+    'REFERENCES': true
+}
+
+const builtInFunctions = {
     'CURRENT_TIMESTAMP': true
 }
 
@@ -94,11 +106,39 @@ export class Database extends StorageBase {
         if (this.settings.schema) SQL += `${this.settings.schema}.`
         SQL += `${table} (`
         for (let colName in tableStruct) {
-            if (colName === 'CONSTRAINT') continue
+            if (DDLKeywords[colName.toUpperCase()]) continue
             const colType = tableStruct[colName]
             SQL += `${colName} ${colType}, `
         }
         if (SQL[SQL.length-1] !== ' ') throw utils.unifyErrMesg(`Table structure shall not be empty`, 'postgres', 'table structure')
+        if (typeof tableStruct.CHECK !== 'undefined') {
+            SQL += `CHECK ${tableStruct.CHECK}, `
+        }
+        if (typeof tableStruct.REFERENCES !== 'undefined') {
+            SQL += `REFERENCES ${tableStruct.REFERENCES}, `
+        }
+        if (typeof tableStruct.UNIQUE !== 'undefined') {
+            SQL += 'UNIQUE ('
+            for (let colName of tableStruct.UNIQUE) {
+                if (!(colName in tableStruct)) {
+                    throw utils.unifyErrMesg(`Invalid column [${colName}] in UNIQUE constraint`, 'postgres', 'table structure')
+                }
+                SQL += `${colName}, `
+            }
+            SQL = SQL.substr(0, SQL.length-2)
+            SQL += '), '
+        }
+        if (typeof tableStruct.PRIMARY !== 'undefined') {
+            SQL += 'PRIMARY KEY ('
+            for (let colName of tableStruct.PRIMARY) {
+                if (!(colName in tableStruct)) {
+                    throw utils.unifyErrMesg(`Invalid column [${colName}] in UNIQUE constraint`, 'postgres', 'table structure')
+                }
+                SQL += `${colName}, `
+            }
+            SQL = SQL.substr(0, SQL.length-2)
+            SQL += '), '
+        }
         if (typeof tableStruct.CONSTRAINTS !== 'undefined') {
             for (let constraint of tableStruct.CONSTRAINTS) {
                 SQL += `CONSTRAINT ${constraint}, `
@@ -141,7 +181,7 @@ export class Database extends StorageBase {
             break
     
             case 'string':
-            if (value in builtInKeywords) result = value
+            if (value in builtInFunctions) result = value
             else result = `'${value}'`
             break
     
