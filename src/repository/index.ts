@@ -40,7 +40,7 @@ export class Repository {
     private store: any;
 
     constructor(repoSettings: RepositorySettings) {
-        this.store = Storage(repoSettings.storage, postgresDBStruct)
+        this.store = new Storage(repoSettings.storage, postgresDBStruct)
     }
 
     async registerService(serviceSettings: ServiceSettings) {

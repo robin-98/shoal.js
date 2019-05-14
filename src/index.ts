@@ -28,13 +28,13 @@ repoInst.registerService({
     console.log(res)
 }).catch(err => {
     console.error(err)
-})
-
-repoInst.queryService({
-    owner: 'sardines-test',
-    name: 'test'
-}).then((res) => {
-    console.log(res)
-}).catch((err) => {
-    console.error(err)
+}).finally(()=> {
+    repoInst.queryService({
+        owner: 'sardines-test',
+        name: 'test'
+    }).then((res) => {
+        console.log(res)
+    }).catch((err) => {
+        console.error(err)
+    })
 })
