@@ -1,4 +1,4 @@
-import { Storage, StorageSettings, PostgresDatabaseStructure  } from '../builtin_services/storage'
+import { Storage, StorageSettings, PostgresDatabaseStructure  } from 'sardines-built-in-services'
 import * as utils from 'sardines-utils'
 
 const postgresDBStruct: PostgresDatabaseStructure = {
