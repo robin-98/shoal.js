@@ -1,4 +1,4 @@
-import { Storage, StorageSettings, PostgresDatabaseStructure  } from 'sardines-built-in-services'
+import { storage, StorageSettings, PostgresDatabaseStructure  } from 'sardines-built-in-services'
 import * as utils from 'sardines-utils'
 
 const postgresDBStruct: PostgresDatabaseStructure = {
@@ -40,7 +40,7 @@ export class Repository {
     private store: any;
 
     constructor(repoSettings: RepositorySettings) {
-        this.store = new Storage(repoSettings.storage, postgresDBStruct)
+        this.store = storage.setup(repoSettings.storage, postgresDBStruct)
     }
 
     async registerService(serviceSettings: ServiceSettings) {
