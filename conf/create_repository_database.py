@@ -29,9 +29,9 @@ try:
 
     if TYPE == "postgres":
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -c "CREATE DATABASE ' + DATABASE + ';"')
-        exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE USER ' + USER + ' WITH PASSWORD \"' + PASSWORD + '\";"')
+        exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE USER ' + USER + ' WITH PASSWORD \'' + PASSWORD + '\';"')
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "GRANT ALL PRIVILEGES ON DATABASE ' + DATABASE + ' TO ' + USER + ';"')
-        exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"')
+        exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE EXTENSION IF NOT EXISTS \\\"uuid-ossp\\\";"')
         exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE SCHEMA IF NOT EXISTS ' + SCHEMA +';"')
         exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "SELECT uuid_generate_v4();"')
 
