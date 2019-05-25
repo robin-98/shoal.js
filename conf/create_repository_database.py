@@ -1,4 +1,5 @@
-#?/usr/bin/env python3
+#? /usr/local/bin/python3
+
 import subprocess, sys, json, os
 process = subprocess.Popen('if [[ "`which psql`" == "" ]]; then echo "Executive psql not found"; exit 1; fi', shell=True, stdout=subprocess.PIPE)
 process.wait()
@@ -32,8 +33,9 @@ try:
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE USER ' + USER + ' WITH PASSWORD \'' + PASSWORD + '\';"')
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "GRANT ALL PRIVILEGES ON DATABASE ' + DATABASE + ' TO ' + USER + ';"')
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE EXTENSION IF NOT EXISTS \\\"uuid-ossp\\\";"')
-        exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE SCHEMA IF NOT EXISTS ' + SCHEMA +';"')
-        exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "SELECT uuid_generate_v4();"')
+        exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -U ' + USER + ' -d ' + DATABASE + ' -c "CREATE SCHEMA IF NOT EXISTS ' + SCHEMA +';"')
+        exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -U ' + USER + ' -d ' + DATABASE + ' -c "GRANT USAGE ON SCHEMA ' + SCHEMA + ' TO ' + USER + ';"')
+        exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -U ' + USER + ' -d ' + DATABASE + ' -c "SELECT uuid_generate_v4();"')
 
 except FileNotFoundError:
     print('project settings file does not exist on the location: ' + proj_settings_file)
