@@ -7,10 +7,13 @@
         "url": "https://github.com/robin-98/sardines.shoal.http.js/issues"
     },
     "dependencies": {
+        "@types/bcrypt": "^3.0.0",
         "@types/pg": "^7.4.14",
+        "bcrypt": "^3.0.6",
         "pg": "^7.11.0",
-        "sardines-utils": "file:../sardines.utils.js",
         "sardines-built-in-services": "file:/Users/rin/Dev/sardines.io/js/sardines.built-in-services.js",
+        "sardines-utils": "file:../sardines.utils.js",
+        "sardines-compiler": "file:../sardines.compiler.js",
         "typescript": "^3.4.5"
     },
     "description": "A built-in service provider for sardines.js",

@@ -1,69 +1,80 @@
-import { storage, StorageSettings, PostgresDatabaseStructure  } from 'sardines-built-in-services'
-import * as utils from 'sardines-utils'
+/**
+ * @author Robin Sun
+ * @email robin@naturewake.com
+ * @create date 2019-06-13 15:42:46
+ * @modify date 2019-06-13 15:42:46
+ * @desc [description]
+ */
+import {
+    Service,
+    Account,
+    Application,
+    RepositorySettings,
+    Token
+} from './base'
 
-const postgresDBStruct: PostgresDatabaseStructure = {
-    service: {
-        id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
-        create_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
-        last_access_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
-        owner: 'VARCHAR(30)',
-        name: 'VARCHAR(30)',
-        version: 'VARCHAR(20)',
-        source: 'VARCHAR(300)',
-        provider_settings: 'JSONB', // Array, enlist all possible provider/driver pairs and provider settings
-        init_params: 'JSONB',   // service used init parameters
-        UNIQUE: ['owner', 'name', 'version']
-    }
+export {
+    Service,
+    Account,
+    Application,
+    RepositorySettings,
+    Token
+} from './base'
+
+import { Repository } from './class'
+
+let repoInst: Repository = null
+
+export const setup = async (settings: RepositorySettings) => {
+    if (repoInst) return
+    if (!repoInst) repoInst = new Repository()
+    await repoInst.setup(settings)
 }
 
-export interface ServiceSettings {
-    owner: string
-    name: string
-    version: string
-    source: string
-    provider_settings?: any[]
-    init_params?: any
+// Account
+export const signIn = async (account: Account, password: string): Promise<string> => {
+    if (!repoInst) return ''
+    return await repoInst.signIn(account, password)
 }
 
-export interface ServiceIdentity {
-    owner: string
-    name: string
-    version?: string
+export const signOut = async(token: string) => {
+    if (!repoInst) return
+    return await repoInst.signOut(token)
 }
 
-
-export interface RepositorySettings {
-    storage: StorageSettings
+export const signUp = async (account: Account, password: string) => {
+    if (!repoInst) return
+    return await repoInst.signUp(account, password)
 }
 
-export class Repository {
-    private store: any;
-
-    constructor(repoSettings: RepositorySettings) {
-        this.store = storage.setup(repoSettings.storage, postgresDBStruct)
-    }
-
-    async registerService(serviceSettings: ServiceSettings) {
-        let res = await this.queryService({ owner: serviceSettings.owner, name: serviceSettings.name, version: serviceSettings.version})
-        if (res) {
-            throw utils.unifyErrMesg(`service [${serviceSettings.owner}/${serviceSettings.name}@${serviceSettings.version}] already exists`, utils.logo, 'repository')
-        }
-        res = await this.store.set('service', serviceSettings)
-        if (res.rowCount === 1) return true
-        else throw utils.unifyErrMesg(`Failed to store service [${serviceSettings.owner}/${serviceSettings.name}@${serviceSettings.version}]`, utils.logo, 'repository')
-    }
-
-    async queryService(identity: ServiceIdentity) {
-        const res = await this.store.get('service', identity)
-        if (res) {
-            let serviceList = []
-            if (!Array.isArray(res)) serviceList.push({id: res.id})
-            else serviceList = res.map((item:any) => ({id: item.id}))
-            for (let service of serviceList) {
-                await this.store.set('service', {last_access_on: 'CURRENT_TIMESTAMP'}, service)
-            }
-        }
-        return res
-    }
+// Application
+export const createOrUpdateApplication = async (application: Application, token: string) => {
+    if (!repoInst) return
+    return await repoInst.createOrUpdateApplication(application, token)
 }
 
+export const queryApplication = async (application: Application|{id: string}, token: string) => {
+    if (!repoInst) return null
+    return await repoInst.queryApplication(application, token)
+}
+
+export const deleteApplication = async (application: Application, token: string) => {
+    if (!repoInst) return
+    return await repoInst.deleteApplication(application, token)
+}
+
+// Service
+export const queryService = async (service: Service, token: string): Promise<Service|null> => {
+    if (!repoInst) return null
+    return await repoInst.queryService(service, token)
+}
+
+export const createOrUpdateService = async (service: Service, token: string): Promise<Service|null> => {
+    if (!repoInst) return null
+    return await repoInst.createOrUpdateService(service, token)
+}
+
+export const deleteService = async (service: Service, token: string) => {
+    if (!repoInst) return
+    return await repoInst.deleteService(service, token)
+}
