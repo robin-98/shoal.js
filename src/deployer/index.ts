@@ -113,8 +113,8 @@ export const deploy = async (filepath: string, serviceDefinitions: any, verbose:
                 let sourceCodeFile = getSourceCodeFilePath(path.resolve(codeBaseDir, './' + service.filepath))
                 if (fs.existsSync(sourceCodeFile)) {
                     let handler = require(sourceCodeFile)[service.name]
-                    if (serviceRuntime.parameters) {
-                        const res = await handler(...serviceRuntime.parameters)
+                    if (serviceRuntime.arguments) {
+                        const res = await handler(...serviceRuntime.arguments)
                         return res
                     }
                 }

@@ -30,7 +30,7 @@ export interface ProviderSettings {
 
 export interface ServiceRuntime {
     service: string
-    parameters?: any[]
+    arguments?: any[]
 }
 
 export interface ServiceSettings {

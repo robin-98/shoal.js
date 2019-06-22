@@ -34,7 +34,7 @@
         },
         "init": [{
             "service": "/repository/setup",
-            "parameters": [{
+            "arguments": [{
                 "db": {
                     "type": "postgres",
                     "settings": {
