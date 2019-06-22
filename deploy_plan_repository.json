@@ -1,0 +1,56 @@
+{
+    "providers": [{
+        "code": {
+            "name": "sardines-service-provider-http",
+            "locationType": "npm_link"
+        },
+        "settings": {
+            "host": "0.0.0.0",
+            "port": 8080,
+            "protocol": "http",
+            "root": "/",
+            "bodyParser": {
+                "formLimit": "10m",
+                "jsonLimit": "10m",
+                "textLimit": "10m"
+            },
+            "safeGuard": true,
+            "cors": {
+                "credentials": true
+            },
+            "syslog": true,
+            "public": {
+                "protocol": "http",
+                "host": "127.0.0.1",
+                "root": "/",
+                "port": 8080
+            }
+        }
+    }],
+    "services": {
+        "code": {
+            "locationType": "file",
+            "location": "./lib/prod"
+        },
+        "init": [{
+            "service": "/repository/setup",
+            "parameters": [{
+                "db": {
+                    "type": "postgres",
+                    "settings": {
+                        "host": "localhost",
+                        "port": 5432,
+                        "database": "sardines_test",
+                        "schema": "test",
+                        "user": "sardines",
+                        "password": "Sardines2019"
+                    }
+                },
+                "owner": {
+                    "name": "robin",
+                    "password": "Startup@2013"
+                }
+            }]
+        }]
+    }
+}

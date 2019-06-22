@@ -1,0 +1,166 @@
+{
+    "services": [
+        {
+            "name": "setup",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "settings",
+                    "type": "RepositorySettings"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "signIn",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "account",
+                    "type": "Account"
+                },
+                {
+                    "name": "password",
+                    "type": "string"
+                }
+            ],
+            "returnType": "string",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "signOut",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "signUp",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "account",
+                    "type": "Account"
+                },
+                {
+                    "name": "password",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "createOrUpdateApplication",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "application",
+                    "type": "Application"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "queryApplication",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "application",
+                    "type": "Application|{id"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "deleteApplication",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "application",
+                    "type": "Application"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "queryService",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "service",
+                    "type": "Service"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "Service|null",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "createOrUpdateService",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "service",
+                    "type": "Service"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "Service|null",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "deleteService",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "service",
+                    "type": "Service"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        }
+    ]
+}

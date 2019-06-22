@@ -5,43 +5,29 @@
  * @modify date 2019-06-13 15:42:55
  * @desc [description]
  */
-import { Repository } from './repository/class'
 
-// const repoInst = new Repository({
-//     storage: {
-//         type: 'postgres',
-//         settings: {
-//             host: 'localhost',
-//             port: 5432,
-//             database: 'sardines_test',
-//             schema: 'test',
-//             user: 'sardines',
-//             password: 'Sardines2019'
-//         }
-//     }
-// })
+import * as deployer from './deployer'
+import * as utils from 'sardines-utils'
 
-// repoInst.createOrUpdateService({
-//     owner: 'sardines-test',
-//     name: 'test',
-//     version: '1.0.1',
-//     source: 'not ready yet',
-//     provider_settings: [{
-//         provider: 'http',
-//         driver: 'http',
-//         settings: 'not ready yet'
-//     }]
-// }).then(res => {
-//     console.log(res)
-// }).catch(err => {
-//     console.error(err)
-// }).finally(()=> {
-//     repoInst.queryService({
-//         owner: 'sardines-test',
-//         name: 'test'
-//     }).then((res) => {
-//         console.log(res)
-//     }).catch((err) => {
-//         console.error(err)
-//     })
-// })
+import * as path from 'path'
+import * as proc from 'process'
+import * as fs from 'fs'
+
+export const startRepository = async (repositoryServices: any) => {
+    if (!repositoryServices) {
+        throw utils.unifyErrMesg('repository services are not correctly compiled', 'shoal', 'repository')
+    }
+    const res = await deployer.deploy(path.resolve(proc.cwd(), './deploy_plan_repository.json'), repositoryServices, true)
+    console.log(res)
+}
+
+const repoServiceFile = path.resolve(proc.cwd(), './repository.json')
+if (fs.existsSync(repoServiceFile)) {
+    const repoServices = JSON.parse(fs.readFileSync(repoServiceFile).toString())
+    startRepository(repoServices).then(res => {
+        console.log('repository as been started:', res)
+    })
+    .catch(e => {
+        console.log('ERROR when starting repository:', e)
+    })
+}

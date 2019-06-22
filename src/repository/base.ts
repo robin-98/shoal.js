@@ -5,17 +5,48 @@
  * @modify date 2019-06-13 15:36:37
  * @desc [description]
  */
-import { storage, StorageSettings, PostgresDatabaseStructure  } from 'sardines-built-in-services'
+import { setupStorage, StorageSettings, PostgresDatabaseStructure, Storage } from 'sardines-built-in-services'
 import * as utils from 'sardines-utils'
+import * as bcrypt from 'bcrypt';
+
+const cryptPassword = async (password: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        bcrypt.genSalt(10, function(err, salt) {
+            if (err) reject(err)
+            bcrypt.hash(password, salt, function(err, hash) {
+                if (err) reject(err)
+                else resolve(hash)
+            });
+        });
+    })
+};
+
+const comparePassword = (plainPass:string, hashword:string): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+        bcrypt.compare(plainPass, hashword, function(err, isPasswordMatch) {
+            if (err) reject(err)
+            else resolve(isPasswordMatch)
+        })
+    })
+};
+
+const tokenAlphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+const genToken = (length: number) => {
+    let token = ''
+    for (let i = 0; i<length; i++) {
+        token += tokenAlphabet[Math.round(Math.random()*(tokenAlphabet.length - 1))]
+    }
+    return token
+}
 
 export const postgresDBStruct: PostgresDatabaseStructure = {
     account: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
-        create_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
-        last_access_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         name: 'VARCHAR(30) UNIQUE NOT NULL',
         password: 'VARCHAR(64) NOT NULL',
-        password_expire_on: 'TIMESTAMPZ',
+        password_expire_on: 'TIMESTAMP(3)',
         email: 'VARCHAR(100) UNIQUE',
         is_email_varified: 'Boolean NOT NULL DEFAULT false',
         mobile: 'VARCHAR(20) UNIQUE',
@@ -28,8 +59,8 @@ export const postgresDBStruct: PostgresDatabaseStructure = {
     },
     application: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
-        create_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
-        last_access_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         name: 'VARCHAR(30) UNIQUE',
         is_public: 'Boolean NOT NULL DEFAULT true',
         owner_id: 'UUID',
@@ -37,8 +68,8 @@ export const postgresDBStruct: PostgresDatabaseStructure = {
     },
     service: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
-        create_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
-        last_access_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         owner_id: 'UUID',
         developers: 'UUID[]',
         is_public: 'Boolean NOT NULL DEFAULT true',
@@ -53,21 +84,27 @@ export const postgresDBStruct: PostgresDatabaseStructure = {
     },
     source: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
-        create_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
-        last_access_on: 'TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         type: 'VARCHAR(30)',
         URL: 'VARCHAR(300)'
     },
     token: {
         account_id: 'UUID UNIQUE NOT NULL',
         token: 'VARCHAR(100)',
-        expire_on: 'TIMESTAMPZ'
+        expire_on: 'TIMESTAMP(3)'
     }
+}
+
+export interface RepositorySettings {
+    db: StorageSettings
+    fs: StorageSettings
+    owner: Account
 }
 
 export interface Service {
     id?: string
-    application: string
+    application?: string
     application_id?: string
     module: string
     name: string
@@ -82,14 +119,14 @@ export interface Service {
 
 export interface Account {
     id?: string
-    name: string
-    email: string
-    mobile: string
-    can_login: boolean
-    can_create_application: boolean
-    can_create_service: boolean
-    can_manage_repository: boolean
-    can_manage_accounts: boolean
+    name?: string
+    email?: string
+    mobile?: string
+    can_login?: boolean
+    can_create_application?: boolean
+    can_create_service?: boolean
+    can_manage_repository?: boolean
+    can_manage_accounts?: boolean
     password?: string
 }
 
@@ -101,26 +138,40 @@ export interface Application {
     developers?: string[]
 }
 
-export interface RepositorySettings {
-    storage: StorageSettings
-    owner: Account
+export enum SourceType {
+    git = 'git'
+}
+
+export interface Source {
+    id?: string
+    type: string
+    URL: string
+    name: string
 }
 
 export interface Token {
     account_id: string
     token: string
-    expire_on: number
+    expire_on?: number
 }
 
-export class RepositoryBase {
-    protected store: any
-    protected owner: Account
-    protected isInited: boolean
 
-    constructor() {}
+export class RepositoryBase {
+    protected db: Storage|null = null
+    protected fs: Storage|null = null
+    protected owner: Account|null = null
+    protected isInited: boolean = false
+    protected tokenCache: Map<string, Token>
+
+    constructor() {
+        this.tokenCache = new Map()
+    }
 
     public async setup(repoSettings: RepositorySettings) {
-        this.store = storage.setup(repoSettings.storage, postgresDBStruct)
+        this.db = setupStorage(repoSettings.db, postgresDBStruct)
+        if (repoSettings.fs) {
+            this.fs = setupStorage(repoSettings.fs)
+        }
         this.owner = repoSettings.owner
         let ownerAccount = await this.queryAccount(this.owner)
         if (!ownerAccount) ownerAccount = this.owner
@@ -128,8 +179,12 @@ export class RepositoryBase {
             ownerAccount[prop] = true
         }
         try {
-            await this.createOrUpdateAccount(ownerAccount)
-            this.owner = await this.queryAccount(ownerAccount)
+            let ownerInDB = await this.queryAccount(ownerAccount)
+            if (!ownerInDB) {
+                ownerInDB = await this.createOrUpdateAccount(ownerAccount)
+                ownerInDB = Object.assign(ownerInDB, ownerAccount)
+            }
+            this.owner = ownerInDB
             this.isInited = true
         } catch (e) {
             utils.inspectedDebugLog('ERROR when initializing repository:', e)
@@ -145,7 +200,7 @@ export class RepositoryBase {
                 await this.touch(tableName, o)
             }
         } else {
-            let objId = {id: null}
+            let objId: {id: string|null}= {id: null}
             if (typeof obj === 'string') {
                 objId.id = obj
             } else if (typeof obj === 'object' && obj && obj.id) {
@@ -153,7 +208,7 @@ export class RepositoryBase {
             }
             if (objId.id) {
                 try {
-                    await this.store.set(tableName, {last_access_on: 'CURRENT_TIMESTAMP'}, objId)
+                    await this.db!.set(tableName, {last_access_on: 'CURRENT_TIMESTAMP'}, objId)
                 } catch (e) {
                     if (e) return 
                 }
@@ -161,12 +216,104 @@ export class RepositoryBase {
         }
     }
 
-    protected async queryAccount(Account: Account|{id: string}) {
-        return await this.store.get('account', Account)
+    protected async queryAccount(account: Account) {
+        let accountForQuery: Account = Object.assign({}, account)
+        if (accountForQuery.password) delete accountForQuery.password
+        return await this.db!.get('account', accountForQuery)
     }
 
-    protected async createOrUpdateAccount(Account: Account) {
-        return await this.store.set('account', Account)
+    protected async createOrUpdateAccount(account: Account) {
+        if (account.password) account.password = await cryptPassword(account.password) 
+        if (!account.id) return await this.db!.set('account', account)
+        else return this.db!.set('account', account, {id: account.id})
+    }
+
+    // Account
+
+    protected validatePassword(password: string) {
+        if (!password) {
+            throw utils.unifyErrMesg('Password can not be empty', 'repository', 'account')
+        } else if (password.length < 6) {
+            throw utils.unifyErrMesg('Password shall be longer than 6', 'repository', 'account')
+        }
+    }
+
+    async signUp(account: Account, password: string) {
+        // Validate account and password
+        this.validatePassword(password)
+
+        // Check whether account exists
+        let accountInst = await this.queryAccount(account)
+        if (account) {
+            throw utils.unifyErrMesg('Account already exists', 'repository', 'account')
+        } else {
+            accountInst = account
+            accountInst = await this.createOrUpdateAccount(accountInst)
+            return accountInst
+        }
+    }
+
+    protected async createToken(accountId: string): Promise<string> {
+        let tokenQuery = {
+            account_id: accountId,
+            token: genToken(30)
+        }
+        let tokenInDb = await this.db!.get('token', tokenQuery)
+        while (tokenInDb) {
+            tokenQuery.token = genToken(30)
+            tokenInDb = await this.db!.get('token', tokenQuery)
+        }
+        let tokenObj: Token = tokenQuery
+        tokenObj.expire_on = Date.now() + 1800000
+        await this.db!.set('token', tokenObj)
+        this.tokenCache.set(tokenObj.token, tokenObj)
+        return tokenObj.token
+    }
+
+    protected async validateToken(token: string, update: boolean = false): Promise<Token> {
+        if (!token) throw utils.unifyErrMesg('token is empty', 'repository', 'token')
+        let tokenObj: Token|null = null
+        if (this.tokenCache.has(token)) {
+            tokenObj = this.tokenCache.get(token)!
+        } else {
+            tokenObj = await this.db!.get('token', {token})
+        }
+        if (!tokenObj) {
+            throw utils.unifyErrMesg('Invalid token', 'repository', 'token')
+        } else if (tokenObj.expire_on && tokenObj.expire_on - Date.now() < 0) {
+            throw utils.unifyErrMesg('token expired', 'repository', 'token')
+        } else {
+            if (update) {
+                tokenObj.expire_on = Date.now() + 1800000
+                await this.db!.set('token', tokenObj)
+                this.tokenCache.set(token, tokenObj)
+            }
+            return tokenObj
+        }
+    }
+
+    async signIn(account: Account, password: string): Promise<string> {
+        this.validatePassword(password)
+        let accountInst = await this.queryAccount(account)
+        if (accountInst) {
+            if (await comparePassword(password, accountInst.password)) {
+                // Get token
+                let token = await this.createToken(accountInst.id)
+                return token
+            } else {
+                throw utils.unifyErrMesg('Password is invalid', 'repository', 'account')
+            }
+        } else {
+            throw utils.unifyErrMesg('Account does not exist', 'repository', 'account')
+        }
+    }
+
+    async signOut(token: string) {
+        await this.validateToken(token)
+        if (this.tokenCache.has(token)) {
+            this.tokenCache.delete(token)
+        } 
+        await this.db!.set('token', null, {token})
     }
 }
 
