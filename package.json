@@ -37,7 +37,7 @@
     },
     "scripts": {
         "reverseCompile": "sardines-compiler --reverse ./src",
-        "compileRepo": "file=repository.json; sardines-compiler --recompile --verbose --gen-services=$file ./src/repository",
+        "compileRepo": "file=repository.json; sardines-compiler --application=sardines-shoal --recompile --verbose --gen-services=$file ./src/repository",
         "buildProd": "npm run clearProd && tsc --build conf/tsconfig.prod.json && npm run makeExecProd",
         "prod": "npm run compileRepo && npm run buildProd && node lib/prod/index.js",
         "buildDev": " npm run clearDev && tsc --build conf/tsconfig.dev.json && npm run makeExecDev",

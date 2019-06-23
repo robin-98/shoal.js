@@ -4,7 +4,7 @@
             "name": "sardines-service-provider-http",
             "locationType": "npm_link"
         },
-        "settings": {
+        "providerSettings": {
             "host": "0.0.0.0",
             "port": 8080,
             "protocol": "http",
@@ -25,9 +25,33 @@
                 "root": "/",
                 "port": 8080
             }
-        }
+        },
+        "applicationSettings": [{
+            "application": "sardines-shoal",
+            "commonSettings": {
+                "root": "/"
+            },
+            "serviceSettings": [{
+                "module": "/repository",
+                "name": "signIn",
+                "settings": {
+                    "method": "put"
+                }
+            }, {
+                "module": "/repository",
+                "name": "signOut",
+                "settings": {
+                    "arguments": [{
+                        "token": "account",
+                        "position": "url"
+                    }],
+                    "method": "get"
+                }
+            }]
+        }]
     }],
-    "services": {
+    "applications": [{
+        "name": "sardines-shoal",
         "code": {
             "locationType": "file",
             "location": "./lib/prod"
@@ -52,5 +76,5 @@
                 }
             }]
         }]
-    }
+    }]
 }

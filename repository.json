@@ -162,5 +162,6 @@
             "isAsync": true,
             "filepath": "/repository/index.ts"
         }
-    ]
+    ],
+    "application": "sardines-shoal"
 }

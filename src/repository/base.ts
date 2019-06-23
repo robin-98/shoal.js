@@ -90,8 +90,8 @@ export const postgresDBStruct: PostgresDatabaseStructure = {
         URL: 'VARCHAR(300)'
     },
     token: {
-        account_id: 'UUID UNIQUE NOT NULL',
-        token: 'VARCHAR(100)',
+        account_id: 'UUID',
+        token: 'VARCHAR(100) UNIQUE NOT NULL',
         expire_on: 'TIMESTAMP(3)'
     }
 }
@@ -259,9 +259,11 @@ export class RepositoryBase {
             token: genToken(30)
         }
         let tokenInDb = await this.db!.get('token', tokenQuery)
+        console.log('account_id:', tokenQuery.account_id, 'token:', tokenQuery.token, 'indb:', tokenInDb)
         while (tokenInDb) {
             tokenQuery.token = genToken(30)
             tokenInDb = await this.db!.get('token', tokenQuery)
+            console.log('account_id:', tokenQuery.account_id, 'token:', tokenQuery.token, 'indb:', tokenInDb)
         }
         let tokenObj: Token = tokenQuery
         tokenObj.expire_on = Date.now() + 1800000

@@ -23,24 +23,44 @@ export interface LocationSettings {
     location?: string
 }
 
+export interface ServiceSettingsForProvider {
+    module: string
+    name: string
+    settings: any
+}
+
+export interface ApplicationSettingsForProvider {
+    application: string
+    commonSettings: any
+    serviceSettings: ServiceSettingsForProvider[]
+}
+
 export interface ProviderSettings {
     code: LocationSettings
-    settings: any
+    providerSettings: any
+    applicationSettings: ApplicationSettingsForProvider[]
+}
+
+export interface ServiceArgument {
+    name: string
+    type: string
 }
 
 export interface ServiceRuntime {
     service: string
-    arguments?: any[]
+    arguments?: ServiceArgument[]
 }
 
-export interface ServiceSettings {
+export interface ApplicationSettings {
+    name: string
     code: LocationSettings
     init: ServiceRuntime[]
 }
 
+
 export interface DeployPlan {
     providers: ProviderSettings[]
-    services: ServiceSettings
+    applications: ApplicationSettings[]
 }
 
 export const rmdir = (dir: string) => {
@@ -138,12 +158,18 @@ export const parseDeployPlanFile = async (filepath: string, verbose: boolean = f
     return plan!
 }
 
-export const getServiceDefinitionsMap = (servDefs: any): Map<string, any>|null => {
-    if (!servDefs || !servDefs.services || !Array.isArray(servDefs.services) || servDefs.services.length === 0) return null
-    let serviceMap: Map<string, any> = new Map()
-    for (let service of servDefs.services) {
-        let servId = `${service.module}/${service.name}`
-        serviceMap.set(servId, service)
+export const getServiceDefinitionsMap = (applications: any[]): Map<string, Map<string, any>>|null => {
+    if (!applications && !Array.isArray(applications)) return null
+    let appMap: Map<string, Map<string, any>> = new Map()
+    for (let servDefs of applications) {
+        if (!servDefs.application || typeof servDefs.application !== 'string') continue
+        if (!servDefs || !servDefs.services || !Array.isArray(servDefs.services) || servDefs.services.length === 0) continue
+        let serviceMap: Map<string, any> = new Map()
+        appMap.set(servDefs.application, serviceMap)
+        for (let service of servDefs.services) {
+            let servId = `${service.module}/${service.name}`
+            serviceMap.set(servId, service)
+        }
     }
-    return serviceMap
+    return appMap
 }
