@@ -42,8 +42,8 @@
                 "name": "signOut",
                 "settings": {
                     "arguments": [{
-                        "token": "account",
-                        "position": "url"
+                        "name": "token",
+                        "position": "query"
                     }],
                     "method": "get"
                 }

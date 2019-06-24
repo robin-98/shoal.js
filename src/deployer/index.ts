@@ -108,10 +108,11 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
 
                     if (providerSettings!.applicationSettings && Array.isArray(providerSettings!.applicationSettings)) {
                         for (let appSettingsForProvider of providerSettings!.applicationSettings) {
+                            let commonSettings = appSettingsForProvider.commonSettings? Object.assign({}, appSettingsForProvider.commonSettings):{}
                             if (appSettingsForProvider.application === app.name  && appSettingsForProvider.serviceSettings && Array.isArray(appSettingsForProvider.serviceSettings)) {
                                 for (let ss of appSettingsForProvider.serviceSettings) {
                                     if ( ss.module === service.module && ss.name === service.name) {
-                                        additionalServiceSettings = ss.settings
+                                        additionalServiceSettings = Object.assign(commonSettings, ss.settings)
                                         break
                                     }
                                 }

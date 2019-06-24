@@ -1,9 +1,9 @@
 import * as origin from './index.sardine'
-import { RepositorySettings } from './base'
-import { Account } from './base'
-import { Application } from './base'
-import { Service } from './base'
-export { RepositorySettings } from './base'
+import { RepositorySettings } from './class'
+import { Account } from './class'
+import { Application } from './class'
+import { Service } from './class'
+export { RepositorySettings } from './class'
 export const setup = async (settings: RepositorySettings) => {
    return await origin.setup(settings)
 }

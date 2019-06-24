@@ -5,15 +5,15 @@
  * @modify date 2019-06-13 15:42:46
  * @desc [description]
  */
-import { RepositorySettings } from './base'
-export { RepositorySettings } from './base'
+import { RepositorySettings } from './class'
+export { RepositorySettings } from './class'
 import { Repository } from './class'
 
 import {
     Account,
     Service,
     Application
-} from './base'
+} from './class'
 
 let repoInst: Repository|null = null
 
