@@ -56,7 +56,7 @@
                     "type": "string"
                 }
             ],
-            "returnType": "any",
+            "returnType": "string",
             "isAsync": true,
             "filepath": "/repository/index.ts"
         },

@@ -15,7 +15,7 @@
         "npm": "^6.9.0",
         "pg": "^7.11.0",
         "sardines-built-in-services": "file:/Users/rin/Dev/sardines.io/js/sardines.built-in-services.js",
-        "sardines-compiler": "file:../sardines.compiler.js",
+        "sardines-compile-time-tools": "file:../sardines.compile-time-tools.js",
         "sardines-utils": "file:../sardines.utils.js",
         "typescript": "^3.4.5"
     },
@@ -36,8 +36,8 @@
         "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
     },
     "scripts": {
-        "reverseCompile": "sardines-compiler --reverse ./src",
-        "compileRepo": "file=repository.json; sardines-compiler --application=sardines-shoal --recompile --verbose --gen-services=$file ./src/repository",
+        "reverseCompile": "sdc --reverse ./src",
+        "compileRepo": "file=repository.json; sdc --application=sardines-shoal --recompile --verbose --gen-services=$file ./src/repository",
         "buildProd": "npm run clearProd && tsc --build conf/tsconfig.prod.json && npm run makeExecProd",
         "prod": "npm run compileRepo && npm run buildProd && node lib/prod/index.js",
         "buildDev": " npm run clearDev && tsc --build conf/tsconfig.dev.json && npm run makeExecDev",

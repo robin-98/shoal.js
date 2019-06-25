@@ -8,8 +8,8 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import * as npm from 'npm'
 import * as utils from 'sardines-utils'
+import { npmCmd } from 'sardines-compile-time-tools'
 
 export enum LocationType {
     npm_link = 'npm_link',
@@ -81,37 +81,14 @@ export const rmdir = (dir: string) => {
 }
 
 export const getPackageFromNpm = async (packName: string, locationType: LocationType, verbose: boolean = false ) =>  {
-    const npm_load = () => {
-        return new Promise((resolve, reject) => {
-            npm.load((err, data) => {
-                if (err) reject(err)
-                else {
-                    // console.log('npm load data:', data)
-                    resolve(data)
-                }
-            })
-        })
-    }
-    const npm_command = (npmInst: any, command: string, args: string[]) => {
-        return new Promise((resolve, reject) => {
-            (<{[key: string]: any}>(npmInst.commands))[command](args, (err:any, data: any) => {
-                if (err) {
-                    reject(err)
-                } else {
-                    resolve(data)
-                }
-            })
-        })
-    }
     try {
-        let npmInst = await npm_load()
         const type = locationType || LocationType.npm_install
         switch (type) {
         case LocationType.npm_install:
             if (verbose) {
                 console.log('going to install package:', packName)
             }
-            await npm_command(npmInst, 'install', [packName])
+            await npmCmd('install', [packName])
             if (verbose) {
                 console.log('package:', packName, 'installed')
             }
@@ -120,7 +97,7 @@ export const getPackageFromNpm = async (packName: string, locationType: Location
             if (verbose) {
                 console.log('going to link package:', packName)
             }
-            await npm_command(npmInst, 'link', [packName])
+            await npmCmd('link', [packName])
             if (verbose) {
                 console.log('package:', packName, 'linked')
             }

@@ -15,7 +15,11 @@ import {
     Application
 } from './class'
 
+import { unifyAsyncHandler, unifyErrMesg } from 'sardines-utils'
+
 let repoInst: Repository|null = null
+
+const errRepoNotSetupYet = unifyErrMesg('Repository is not setup yet', 'repository', 'setup')
 
 export const setup = async (settings: RepositorySettings) => {
     if (repoInst) return
@@ -25,48 +29,48 @@ export const setup = async (settings: RepositorySettings) => {
 
 // Account
 export const signIn = async (account: Account, password: string): Promise<string> => {
-    if (!repoInst) return ''
-    return await repoInst.signIn(account, password)
+    if (!repoInst) throw errRepoNotSetupYet
+    return await unifyAsyncHandler('repository', 'sign in', repoInst.signIn, repoInst)(account, password)
 }
 
 export const signOut = async(token: string) => {
-    if (!repoInst) return
-    return await repoInst.signOut(token)
+    if (!repoInst) throw errRepoNotSetupYet
+    return await unifyAsyncHandler('repository', 'sign out', repoInst.signOut, repoInst)(token)
 }
 
-export const signUp = async (account: Account, password: string) => {
-    if (!repoInst) return
-    return await repoInst.signUp(account, password)
+export const signUp = async (account: Account, password: string): Promise<string> => {
+    if (!repoInst) throw errRepoNotSetupYet
+    return await unifyAsyncHandler('repository', 'sign up', repoInst.signUp, repoInst)(account, password)
 }
 
 // Application
 export const createOrUpdateApplication = async (application: Application, token: string) => {
-    if (!repoInst) return
-    return await repoInst.createOrUpdateApplication(application, token)
+    if (!repoInst) throw errRepoNotSetupYet
+    return await unifyAsyncHandler('repository', 'create or update application', repoInst.createOrUpdateApplication, repoInst)(application, token)
 }
 
 export const queryApplication = async (application: Application|{id: string}, token: string) => {
-    if (!repoInst) return null
-    return await repoInst.queryApplication(application, token)
+    if (!repoInst) throw errRepoNotSetupYet
+    return await unifyAsyncHandler('repository', 'query application', repoInst.queryApplication, repoInst)(application, token)
 }
 
 export const deleteApplication = async (application: Application, token: string) => {
-    if (!repoInst) return
-    return await repoInst.deleteApplication(application, token)
+    if (!repoInst) throw errRepoNotSetupYet
+    return await unifyAsyncHandler('repository', 'delete application', repoInst.deleteApplication, repoInst)(application, token)
 }
 
 // Service
 export const queryService = async (service: Service, token: string): Promise<Service|null> => {
     if (!repoInst) return null
-    return await repoInst.queryService(service, token)
+    return await unifyAsyncHandler('repository', 'query service', repoInst.queryService, repoInst)(service, token)
 }
 
 export const createOrUpdateService = async (service: Service, token: string): Promise<Service|null> => {
     if (!repoInst) return null
-    return await repoInst.createOrUpdateService(service, token)
+    return await unifyAsyncHandler('repository', 'create or update service', repoInst.createOrUpdateService, repoInst)(service, token)
 }
 
 export const deleteService = async (service: Service, token: string) => {
     if (!repoInst) return
-    return await repoInst.deleteService(service, token)
+    return await unifyAsyncHandler('repository', 'delete service', repoInst.deleteService, repoInst)(service, token)
 }

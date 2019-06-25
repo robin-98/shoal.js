@@ -10,7 +10,7 @@ import {
     StorageSettings,
     PostgresDatabaseStructure,
     Storage,
-    PostgresTemplete,
+    PostgresTempleteAccount,
     Account as TempleteAccount,
     PostgresServerSettings
 } from 'sardines-built-in-services'
@@ -104,7 +104,7 @@ export interface Source {
 }
 
 
-export class Repository extends PostgresTemplete {
+export class Repository extends PostgresTempleteAccount {
     protected fs: Storage|null = null
     protected owner: Account|null = null
 

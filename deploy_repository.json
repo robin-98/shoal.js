@@ -39,6 +39,12 @@
                 }
             }, {
                 "module": "/repository",
+                "name": "signUp",
+                "settings": {
+                    "method": "put"
+                }
+            }, {
+                "module": "/repository",
                 "name": "signOut",
                 "settings": {
                     "arguments": [{
