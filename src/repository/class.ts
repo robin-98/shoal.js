@@ -92,6 +92,7 @@ export interface Service {
     provider_settings?: any[]
     init_params?: any
     last_access_on?: any
+    file_path?: string
 }
 
 export interface Account extends TempleteAccount {
