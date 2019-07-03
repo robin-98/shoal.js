@@ -161,6 +161,57 @@
             "returnType": "any",
             "isAsync": true,
             "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "querySource",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "source",
+                    "type": "Source"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "Source|null",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "createOrUpdateSource",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "source",
+                    "type": "Source"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "Source|null",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "deleteSource",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "source",
+                    "type": "Source"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
         }
     ],
     "application": "sardines-shoal"

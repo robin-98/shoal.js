@@ -18,8 +18,8 @@ import * as utils from 'sardines-utils'
 
 export const extraPostgresDBStruct: PostgresDatabaseStructure = {
     account: {
-        can_create_application: 'Boolean NOT NULL DEFAULT false',
-        can_create_service: 'Boolean NOT NULL DEFAULT false',
+        can_create_application: 'Boolean NOT NULL DEFAULT true',
+        can_create_service: 'Boolean NOT NULL DEFAULT true',
         can_manage_repository: 'Boolean NOT NULL DEFAULT false'
     },
     application: {
@@ -43,6 +43,13 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         name: 'VARCHAR(30)',
         version: 'VARCHAR(20)',
         source_id: 'UUID',
+        arguments: [{
+            name: 'VARCHAR(50)',
+            type: 'VARCHAR(100)'
+        }],
+        return_type: 'VARCHAR(100)',
+        is_async: 'BOOLEAN',
+        file_path: 'VARCHAR(100)',
         provider_settings: 'JSONB', // Array, enlist all possible provider/driver pairs and provider settings
         init_params: 'JSONB',   // service used init parameters
         UNIQUE: ['application_id', 'name', 'version']
@@ -52,7 +59,8 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         type: 'VARCHAR(30)',
-        URL: 'VARCHAR(300)'
+        URL: 'VARCHAR(300)',
+        root: 'VARCHAR(100) DEFAULT \'/\''
     }
 }
 
@@ -62,19 +70,28 @@ export interface RepositorySettings {
     owner: Account
 }
 
+export interface ServiceArgument {
+    type: string
+    name: string
+}
+
 export interface Service {
     id?: string
     application?: string
     application_id?: string
     module: string
     name: string
+    arguments: ServiceArgument[]
+    return_type: string
+    is_async: boolean
     version?: string
-    source?: string
+    source_id?: string
     is_public?: boolean
     owner?: string
     developers?: string[]
     provider_settings?: any[]
     init_params?: any
+    last_access_on?: any
 }
 
 export interface Account extends TempleteAccount {
@@ -88,8 +105,9 @@ export interface Application {
     id?: string
     name?: string
     is_public?: boolean
-    owner?: string
+    owner_id?: string
     developers?: string[]
+    last_access_on?: any
 }
 
 export enum SourceType {
@@ -100,7 +118,8 @@ export interface Source {
     id?: string
     type: string
     URL: string
-    name: string
+    root: string
+    last_access_on?: any
 }
 
 
@@ -145,7 +164,7 @@ export class Repository extends PostgresTempleteAccount {
                 throw utils.unifyErrMesg('Do not have privileges on creating or updating any application', 'repository', 'application')
             }
             let appInst: Application = await this.queryApplication(appIdentity, token)
-            if (appInst && appInst.owner !== account.id && account.id !== this.owner!.id) {
+            if (appInst && appInst.owner_id !== account.id && account.id !== this.owner!.id) {
                 throw utils.unifyErrMesg('Do not have privilege to update this application', 'repository', 'application')
             }
             return appInst
@@ -155,9 +174,12 @@ export class Repository extends PostgresTempleteAccount {
             let tokenObj = await this.validateToken(token, true)
             let account: Account = await this.queryAccount({id: tokenObj.account_id})
             const appInst = await this.checkAppPrivilege(application, token, account)
+            application.last_access_on = Date.now()
             if (appInst) {
-                return await this.db!.set('application', application, {id: appInst.id})
+                await this.db!.set('application', application, {id: appInst.id})
+                return {id: appInst.id}
             } else {
+                application.owner_id = account.id
                 return await this.db!.set('application', application)
             }
         }
@@ -183,7 +205,13 @@ export class Repository extends PostgresTempleteAccount {
             if (!account.can_create_service) {
                 throw utils.unifyErrMesg('Do not have privileges on creating or updating any service', 'repository', 'service')
             }
-            let serviceInst: Service = await this.queryService(service, token)
+            let serviceQuery: any = {}
+            if (service.application_id) serviceQuery.application_id = service.application_id
+            if (service.module) serviceQuery.module = service.module
+            if (service.name) serviceQuery.name = service.name
+            if (service.version) serviceQuery.version = service.version
+
+            let serviceInst: Service = await this.queryService(serviceQuery, token)
             if (serviceInst) {
                 let appIdentity: Application|null = null
                 if (serviceInst.application_id) appIdentity = {id: serviceInst.application_id}
@@ -193,7 +221,7 @@ export class Repository extends PostgresTempleteAccount {
                 if (!appInst) {
                     throw utils.unifyErrMesg('Invalid application setting', 'repository', 'service')
                 } else if (account.id && account.id !== this.owner!.id
-                    && account.id !== appInst.owner && account.id !== serviceInst.owner
+                    && account.id !== appInst.owner_id && account.id !== serviceInst.owner
                     && appInst.developers && appInst.developers.indexOf(account.id) < 0
                     && serviceInst.developers && serviceInst.developers.indexOf(account.id)<0 ) {
                     throw utils.unifyErrMesg('Do not have privilege to update this service', 'repository', 'service')
@@ -202,28 +230,40 @@ export class Repository extends PostgresTempleteAccount {
             return serviceInst
         }
     
-        async createOrUpdateService(service: Service, token: string) {
-            let tokenObj = await this.validateToken(token, true)
-            let account: Account = await this.queryAccount({id: tokenObj.account_id})
-            let serviceInst = await this.checkServicePrivilege(service, token, account)
-            if (serviceInst) {
-                return await this.db!.set('service', service, {id: serviceInst.id})
-            } else if (service.application || service.application_id) {
-                let appIdentity: Application = {}
-                if (service.application_id) appIdentity.id = service.application_id
-                else if (service.application) appIdentity.name = service.application
-                let appInst = await this.queryApplication(appIdentity, token)
-                if (!appInst && account.can_create_application && !service.application_id) {
-                    appInst = await this.createOrUpdateApplication(appIdentity, token)
-                } else if (!appInst && !account.can_create_application) {
-                    throw utils.unifyErrMesg('Do not have privilege to create application', 'repository', 'service')
-                } else if (!appInst && service.application_id) {
-                    throw utils.unifyErrMesg('Invalid application id', 'repository', 'service')
+        async createOrUpdateService(serviceArg: Service|Service[], token: string) {
+            if (Array.isArray(serviceArg)) {
+                let res = []
+                for (let i = 0; i<serviceArg.length; i++) {
+                    let resItem:any = await this.createOrUpdateService(serviceArg[i], token)
+                    res.push(resItem)
                 }
-                serviceInst = Object.assign({application_id: appInst.id}, service)
-                return await this.db!.set('service', serviceInst)
+                return res
             } else {
-                throw utils.unifyErrMesg('Can not create service without application setting', 'repository', 'service')
+                const service = serviceArg
+                let tokenObj = await this.validateToken(token, true)
+                let account: Account = await this.queryAccount({id: tokenObj.account_id})
+                let serviceInst = await this.checkServicePrivilege(service, token, account)
+                service.last_access_on = Date.now()
+                if (serviceInst) {
+                    await this.db!.set('service', service, {id: serviceInst.id})
+                    return {id: serviceInst.id}
+                } else if (service.application || service.application_id) {
+                    let appIdentity: Application = {}
+                    if (service.application_id) appIdentity.id = service.application_id
+                    else if (service.application) appIdentity.name = service.application
+                    let appInst = await this.queryApplication(appIdentity, token)
+                    if (!appInst && account.can_create_application && !service.application_id) {
+                        appInst = await this.createOrUpdateApplication(appIdentity, token)
+                    } else if (!appInst && !account.can_create_application) {
+                        throw utils.unifyErrMesg('Do not have privilege to create application', 'repository', 'service')
+                    } else if (!appInst && service.application_id) {
+                        throw utils.unifyErrMesg('Invalid application id', 'repository', 'service')
+                    }
+                    serviceInst = Object.assign({application_id: appInst.id}, service)
+                    return await this.db!.set('service', serviceInst)
+                } else {
+                    throw utils.unifyErrMesg('Can not create service without application setting', 'repository', 'service')
+                }
             }
         }
     
@@ -263,15 +303,16 @@ export class Repository extends PostgresTempleteAccount {
             let tokenObj = await this.validateToken(token, true)
             let account: Account = await this.queryAccount({id: tokenObj.account_id})
             let sourceInst = await this.checkSourcePrivilege(source, token, account)
+            source.last_access_on = Date.now()
             if (sourceInst) {
-                return await this.db!.set('source', source, {id: sourceInst.id})
+                await this.db!.set('source', source, {id: sourceInst.id})
+                return {id: sourceInst.id}
             } else {
                 return await this.db!.set('source', source)
             }
         }
     
         async deleteSource(source: Source, token: string) {
-            
             let tokenObj = await this.validateToken(token, true)
             let account: Account = await this.queryAccount({id: tokenObj.account_id})
             let sourceInst: Source|null = await this.checkSourcePrivilege(source, token, account)

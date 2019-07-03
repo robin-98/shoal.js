@@ -36,12 +36,12 @@
         "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
     },
     "scripts": {
-        "reverseCompile": "sdc --reverse ./src",
-        "compileRepo": "file=repository.json; sdc --application=sardines-shoal --recompile --verbose --gen-services=$file ./src/repository",
+        "reverseCompile": "sardines-compiler --reverse ./src",
+        "compileRepo": "file=repository.json; sardines-compiler --application=sardines-shoal --recompile --verbose --gen-services=$file ./src/repository",
         "buildProd": "npm run clearProd && tsc --build conf/tsconfig.prod.json && npm run makeExecProd",
-        "prod": "npm run compileRepo && npm run buildProd && node lib/prod/index.js",
+        "prod": "npm run compileRepo && npm run buildProd && npm run reverseCompile && node lib/prod/index.js",
         "buildDev": " npm run clearDev && tsc --build conf/tsconfig.dev.json && npm run makeExecDev",
-        "dev": "npm run compileRepo && npm run buildDev && node lib/dev/index.js",
+        "dev": "npm run compileRepo && npm run buildDev && npm run reverseCompile && node lib/dev/index.js",
         "clear": "rm -rf lib/*",
         "clearDev": "rm -rf lib/dev",
         "clearProd": "rm -rf lib/prod",
