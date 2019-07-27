@@ -9,9 +9,9 @@
     "dependencies": {
         "@types/bcrypt": "^3.0.0",
         "@types/node": "^12.6.8",
+        "@types/npm": "^2.0.30",
         "bcrypt": "^3.0.6",
-        "sardines-built-in-services": "file:/Users/rin/Dev/sardines.io/js/sardines.built-in-services.js",
-        "sardines-compile-time-tools": "file:../sardines.compile-time-tools.js",
+        "npm": "^6.10.2",
         "sardines-core": "file:../sardines.core.js",
         "sardines-utils": "file:../sardines.utils.js",
         "typescript": "^3.4.5"
@@ -33,12 +33,10 @@
         "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
     },
     "scripts": {
-        "reverseCompile": "sardines-compiler --reverse ./src",
-        "compileRepo": "file=repository.json; sardines-compiler --application=sardines-shoal --recompile --verbose --gen-services=$file ./src/repository",
         "buildProd": "npm run clearProd && tsc --build conf/tsconfig.prod.json && npm run makeExecProd",
-        "prod": "npm run compileRepo && npm run buildProd && npm run reverseCompile && node lib/prod/index.js",
+        "prod": "npm run buildProd && node lib/prod/index.js",
         "buildDev": " npm run clearDev && tsc --build conf/tsconfig.dev.json && npm run makeExecDev",
-        "dev": "npm run compileRepo && npm run buildDev && npm run reverseCompile && node lib/dev/index.js",
+        "dev": "npm run buildDev && node lib/dev/index.js",
         "clear": "rm -rf lib/*",
         "clearDev": "rm -rf lib/dev",
         "clearProd": "rm -rf lib/prod",

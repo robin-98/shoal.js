@@ -8,8 +8,8 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
+import * as npm from 'npm'
 import * as utils from 'sardines-utils'
-import { npmCmd } from 'sardines-compile-time-tools'
 
 export enum LocationType {
     npm_link = 'npm_link',
@@ -78,6 +78,33 @@ export const rmdir = (dir: string) => {
     } else if (fs.lstatSync(dir).isFile()) {
         fs.unlinkSync(dir)
     }
+}
+
+let npmInst: any = null
+export const npmCmd = (command: string, args: string[]) => {
+    return new Promise((resolve, reject) => {
+        const cmd = () => {
+            (<{[key: string]: any}>(npmInst.commands))[command](args, (err:any, data: any) => {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(data)
+                }
+            })
+        }
+        if (!npmInst) {
+            npm.load((err, inst) => {
+                if (err) reject(err)
+                else {
+                    // console.log('npm load data:', data)
+                    npmInst = inst
+                    cmd()
+                }
+            })
+        } else {
+            cmd()
+        }
+    })
 }
 
 export const getPackageFromNpm = async (packName: string, locationType: LocationType, verbose: boolean = false ) =>  {

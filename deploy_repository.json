@@ -27,7 +27,7 @@
             }
         },
         "applicationSettings": [{
-            "application": "sardines-shoal",
+            "application": "sardines",
             "commonSettings": {
                 "root": "/"
             },
@@ -57,10 +57,10 @@
         }]
     }],
     "applications": [{
-        "name": "sardines-shoal",
+        "name": "sardines",
         "code": {
             "locationType": "file",
-            "location": "./lib/prod"
+            "location": "./node_modules/sardines-core/lib/prod"
         },
         "init": [{
             "service": "/repository/setup",
