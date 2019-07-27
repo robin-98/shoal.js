@@ -159,169 +159,169 @@ export class Repository extends PostgresTempleteAccount {
         }
     }
 
-        // Application
-        private async checkAppPrivilege(appIdentity: Application, token: string, account: Account) {
-            if (!account.can_create_application) {
-                throw utils.unifyErrMesg('Do not have privileges on creating or updating any application', 'repository', 'application')
-            }
-            let appInst: Application = await this.queryApplication(appIdentity, token)
-            if (appInst && appInst.owner_id !== account.id && account.id !== this.owner!.id) {
-                throw utils.unifyErrMesg('Do not have privilege to update this application', 'repository', 'application')
-            }
-            return appInst
+    // Application
+    private async checkAppPrivilege(appIdentity: Application, token: string, account: Account) {
+        if (!account.can_create_application) {
+            throw utils.unifyErrMesg('Do not have privileges on creating or updating any application', 'repository', 'application')
         }
-    
-        async createOrUpdateApplication(application: Application, token: string) {
-            let tokenObj = await this.validateToken(token, true)
-            let account: Account = await this.queryAccount({id: tokenObj.account_id})
-            const appInst = await this.checkAppPrivilege(application, token, account)
-            application.last_access_on = Date.now()
-            if (appInst) {
-                await this.db!.set('application', application, {id: appInst.id})
-                return {id: appInst.id}
-            } else {
-                application.owner_id = account.id
-                return await this.db!.set('application', application)
-            }
+        let appInst: Application = await this.queryApplication(appIdentity, token)
+        if (appInst && appInst.owner_id !== account.id && account.id !== this.owner!.id) {
+            throw utils.unifyErrMesg('Do not have privilege to update this application', 'repository', 'application')
         }
-    
-        async deleteApplication(application: Application, token: string) {
-            let tokenObj = await this.validateToken(token, true)
-            let account: Account = await this.queryAccount({id: tokenObj.account_id})
-            const appInst = await this.checkAppPrivilege(application, token, account)
-            if (appInst) {
-                return await this.db!.set('application', null, {id: appInst.id})
-            } else {
-                throw utils.unifyErrMesg('Application does not exist', 'repository', 'application')
-            }
-        }
-    
-        async queryApplication(application: Application|{id: string}, token: string) {
-            await this.validateToken(token, true)
-            return await this.db!.get('application', application)
-        }
-    
-        // Service
-        private async checkServicePrivilege(service: Service, token: string, account: Account) {
-            if (!account.can_create_service) {
-                throw utils.unifyErrMesg('Do not have privileges on creating or updating any service', 'repository', 'service')
-            }
-            let serviceQuery: any = {}
-            if (service.application_id) serviceQuery.application_id = service.application_id
-            if (service.module) serviceQuery.module = service.module
-            if (service.name) serviceQuery.name = service.name
-            if (service.version) serviceQuery.version = service.version
+        return appInst
+    }
 
-            let serviceInst: Service = await this.queryService(serviceQuery, token)
-            if (serviceInst) {
-                let appIdentity: Application|null = null
-                if (serviceInst.application_id) appIdentity = {id: serviceInst.application_id}
-                else if (service.application) appIdentity = {name: serviceInst.application}
-                if (!appIdentity) throw utils.unifyErrMesg('Application setting is missing', 'repository', 'service')
-                let appInst: Application = await this.queryApplication(appIdentity, token)
-                if (!appInst) {
-                    throw utils.unifyErrMesg('Invalid application setting', 'repository', 'service')
-                } else if (account.id && account.id !== this.owner!.id
-                    && account.id !== appInst.owner_id && account.id !== serviceInst.owner
-                    && appInst.developers && appInst.developers.indexOf(account.id) < 0
-                    && serviceInst.developers && serviceInst.developers.indexOf(account.id)<0 ) {
-                    throw utils.unifyErrMesg('Do not have privilege to update this service', 'repository', 'service')
-                }
-            }
-            return serviceInst
+    async createOrUpdateApplication(application: Application, token: string) {
+        let tokenObj = await this.validateToken(token, true)
+        let account: Account = await this.queryAccount({id: tokenObj.account_id})
+        const appInst = await this.checkAppPrivilege(application, token, account)
+        application.last_access_on = Date.now()
+        if (appInst) {
+            await this.db!.set('application', application, {id: appInst.id})
+            return {id: appInst.id}
+        } else {
+            application.owner_id = account.id
+            return await this.db!.set('application', application)
         }
-    
-        async createOrUpdateService(serviceArg: Service|Service[], token: string) {
-            if (Array.isArray(serviceArg)) {
-                let res = []
-                for (let i = 0; i<serviceArg.length; i++) {
-                    let resItem:any = await this.createOrUpdateService(serviceArg[i], token)
-                    res.push(resItem)
-                }
-                return res
-            } else {
-                const service = serviceArg
-                let tokenObj = await this.validateToken(token, true)
-                let account: Account = await this.queryAccount({id: tokenObj.account_id})
-                let serviceInst = await this.checkServicePrivilege(service, token, account)
-                service.last_access_on = Date.now()
-                if (serviceInst) {
-                    await this.db!.set('service', service, {id: serviceInst.id})
-                    return {id: serviceInst.id}
-                } else if (service.application || service.application_id) {
-                    let appIdentity: Application = {}
-                    if (service.application_id) appIdentity.id = service.application_id
-                    else if (service.application) appIdentity.name = service.application
-                    let appInst = await this.queryApplication(appIdentity, token)
-                    if (!appInst && account.can_create_application && !service.application_id) {
-                        appInst = await this.createOrUpdateApplication(appIdentity, token)
-                    } else if (!appInst && !account.can_create_application) {
-                        throw utils.unifyErrMesg('Do not have privilege to create application', 'repository', 'service')
-                    } else if (!appInst && service.application_id) {
-                        throw utils.unifyErrMesg('Invalid application id', 'repository', 'service')
-                    }
-                    serviceInst = Object.assign({application_id: appInst.id}, service)
-                    return await this.db!.set('service', serviceInst)
-                } else {
-                    throw utils.unifyErrMesg('Can not create service without application setting', 'repository', 'service')
-                }
+    }
+
+    async deleteApplication(application: Application, token: string) {
+        let tokenObj = await this.validateToken(token, true)
+        let account: Account = await this.queryAccount({id: tokenObj.account_id})
+        const appInst = await this.checkAppPrivilege(application, token, account)
+        if (appInst) {
+            return await this.db!.set('application', null, {id: appInst.id})
+        } else {
+            throw utils.unifyErrMesg('Application does not exist', 'repository', 'application')
+        }
+    }
+
+    async queryApplication(application: Application|{id: string}, token: string) {
+        await this.validateToken(token, true)
+        return await this.db!.get('application', application)
+    }
+
+    // Service
+    private async checkServicePrivilege(service: Service, token: string, account: Account) {
+        if (!account.can_create_service) {
+            throw utils.unifyErrMesg('Do not have privileges on creating or updating any service', 'repository', 'service')
+        }
+        let serviceQuery: any = {}
+        if (service.application_id) serviceQuery.application_id = service.application_id
+        if (service.module) serviceQuery.module = service.module
+        if (service.name) serviceQuery.name = service.name
+        if (service.version) serviceQuery.version = service.version
+
+        let serviceInst: Service = await this.queryService(serviceQuery, token)
+        if (serviceInst) {
+            let appIdentity: Application|null = null
+            if (serviceInst.application_id) appIdentity = {id: serviceInst.application_id}
+            else if (service.application) appIdentity = {name: serviceInst.application}
+            if (!appIdentity) throw utils.unifyErrMesg('Application setting is missing', 'repository', 'service')
+            let appInst: Application = await this.queryApplication(appIdentity, token)
+            if (!appInst) {
+                throw utils.unifyErrMesg('Invalid application setting', 'repository', 'service')
+            } else if (account.id && account.id !== this.owner!.id
+                && account.id !== appInst.owner_id && account.id !== serviceInst.owner
+                && appInst.developers && appInst.developers.indexOf(account.id) < 0
+                && serviceInst.developers && serviceInst.developers.indexOf(account.id)<0 ) {
+                throw utils.unifyErrMesg('Do not have privilege to update this service', 'repository', 'service')
             }
         }
-    
-        async queryService(service: Service, token: string): Promise<Service> {
-            await this.validateToken(token, true)
-            let serviceInst = await this.db!.get('service', service)
-            if (serviceInst) {
-                // Fetch foreign keys
+        return serviceInst
+    }
+
+    async createOrUpdateService(serviceArg: Service|Service[], token: string) {
+        if (Array.isArray(serviceArg)) {
+            let res = []
+            for (let i = 0; i<serviceArg.length; i++) {
+                let resItem:any = await this.createOrUpdateService(serviceArg[i], token)
+                res.push(resItem)
             }
-            return serviceInst
-        }
-    
-        async deleteService(service: Service, token: string) {
+            return res
+        } else {
+            const service = serviceArg
             let tokenObj = await this.validateToken(token, true)
             let account: Account = await this.queryAccount({id: tokenObj.account_id})
-            const serviceInst = await this.checkServicePrivilege(service, token, account)
+            let serviceInst = await this.checkServicePrivilege(service, token, account)
+            service.last_access_on = Date.now()
             if (serviceInst) {
-                return await this.db!.set('service', null, {id: serviceInst.id})
+                await this.db!.set('service', service, {id: serviceInst.id})
+                return {id: serviceInst.id}
+            } else if (service.application || service.application_id) {
+                let appIdentity: Application = {}
+                if (service.application_id) appIdentity.id = service.application_id
+                else if (service.application) appIdentity.name = service.application
+                let appInst = await this.queryApplication(appIdentity, token)
+                if (!appInst && account.can_create_application && !service.application_id) {
+                    appInst = await this.createOrUpdateApplication(appIdentity, token)
+                } else if (!appInst && !account.can_create_application) {
+                    throw utils.unifyErrMesg('Do not have privilege to create application', 'repository', 'service')
+                } else if (!appInst && service.application_id) {
+                    throw utils.unifyErrMesg('Invalid application id', 'repository', 'service')
+                }
+                serviceInst = Object.assign({application_id: appInst.id}, service)
+                return await this.db!.set('service', serviceInst)
             } else {
-                throw utils.unifyErrMesg('Service does not exist', 'repository', 'service')
+                throw utils.unifyErrMesg('Can not create service without application setting', 'repository', 'service')
             }
         }
-        
-        // Source
-        async checkSourcePrivilege(source: Source, token: string, account: Account): Promise<Source|null> {
-            let sourceInst = await this.querySource(source, token)
-            if (!account) return null
-            else return sourceInst
+    }
+
+    async queryService(service: Service, token: string): Promise<Service> {
+        await this.validateToken(token, true)
+        let serviceInst = await this.db!.get('service', service)
+        if (serviceInst) {
+            // Fetch foreign keys
         }
+        return serviceInst
+    }
+
+    async deleteService(service: Service, token: string) {
+        let tokenObj = await this.validateToken(token, true)
+        let account: Account = await this.queryAccount({id: tokenObj.account_id})
+        const serviceInst = await this.checkServicePrivilege(service, token, account)
+        if (serviceInst) {
+            return await this.db!.set('service', null, {id: serviceInst.id})
+        } else {
+            throw utils.unifyErrMesg('Service does not exist', 'repository', 'service')
+        }
+    }
     
-        async querySource(source: Source, token: string): Promise<Source|null> {
-            await this.validateToken(token, true)
-            return await this.db!.get('source', source)
+    // Source
+    async checkSourcePrivilege(source: Source, token: string, account: Account): Promise<Source|null> {
+        let sourceInst = await this.querySource(source, token)
+        if (!account) return null
+        else return sourceInst
+    }
+
+    async querySource(source: Source, token: string): Promise<Source|null> {
+        await this.validateToken(token, true)
+        return await this.db!.get('source', source)
+    }
+
+    async createOrUpdateSource(source: Source, token: string) {
+        let tokenObj = await this.validateToken(token, true)
+        let account: Account = await this.queryAccount({id: tokenObj.account_id})
+        let sourceInst = await this.checkSourcePrivilege(source, token, account)
+        source.last_access_on = Date.now()
+        if (sourceInst) {
+            await this.db!.set('source', source, {id: sourceInst.id})
+            return {id: sourceInst.id}
+        } else {
+            return await this.db!.set('source', source)
         }
-    
-        async createOrUpdateSource(source: Source, token: string) {
-            let tokenObj = await this.validateToken(token, true)
-            let account: Account = await this.queryAccount({id: tokenObj.account_id})
-            let sourceInst = await this.checkSourcePrivilege(source, token, account)
-            source.last_access_on = Date.now()
-            if (sourceInst) {
-                await this.db!.set('source', source, {id: sourceInst.id})
-                return {id: sourceInst.id}
-            } else {
-                return await this.db!.set('source', source)
-            }
+    }
+
+    async deleteSource(source: Source, token: string) {
+        let tokenObj = await this.validateToken(token, true)
+        let account: Account = await this.queryAccount({id: tokenObj.account_id})
+        let sourceInst: Source|null = await this.checkSourcePrivilege(source, token, account)
+        if (sourceInst) {
+            return await this.db!.set('source', null, {id: sourceInst.id})
+        } else {
+            throw utils.unifyErrMesg('Source does not exist', 'repository', 'source')
         }
-    
-        async deleteSource(source: Source, token: string) {
-            let tokenObj = await this.validateToken(token, true)
-            let account: Account = await this.queryAccount({id: tokenObj.account_id})
-            let sourceInst: Source|null = await this.checkSourcePrivilege(source, token, account)
-            if (sourceInst) {
-                return await this.db!.set('source', null, {id: sourceInst.id})
-            } else {
-                throw utils.unifyErrMesg('Source does not exist', 'repository', 'source')
-            }
-        }
+    }
 }
 
