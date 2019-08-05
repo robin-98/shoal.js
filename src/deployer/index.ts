@@ -5,16 +5,15 @@
  * @modify date 2019-06-20 15:50:46
  * @desc provider builder is to start/shutdown a service provider according to its settings
  */
-import * as utils from 'sardines-utils'
 import * as path from 'path'
 import * as proc from 'process'
 
-import { 
-    getPackageFromNpm,
+import { utils, Sardines, Factory } from 'sardines-core'
+import { Source } from 'sardines-compile-time-tools'
+
+import {
     parseDeployPlanFile,
-    LocationType,
-    getServiceDefinitionsMap,
-    ProviderSettings
+    getServiceDefinitionsMap
 } from './deployer_utils'
 import * as fs from 'fs';
 
@@ -36,21 +35,21 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
     }
 
     const providerInstances: Map<string, any> = new Map()
-    const providerSettingsCache: Map<string, ProviderSettings> = new Map()
+    const providerSettingsCache: Map<string, Sardines.ProviderSettings> = new Map()
     for (let providerInfo of deployPlan.providers) {
         // Get provider settings
         let providerClass: any = null, providerName: string|null = null
         if (providerInfo.code && providerInfo.code.name) {
             providerName = providerInfo.code.name
-            if (!utils.Factory.getClass(providerName)) {
-                providerClass = await getPackageFromNpm(providerName, providerInfo.code.locationType, verbose)
+            if (!Factory.getClass(providerName)) {
+                providerClass = await Source.getPackageFromNpm(providerName, providerInfo.code.locationType, verbose)
                 if (providerClass) {
-                    utils.Factory.setClass(providerName, providerClass, 'provider')
+                    Factory.setClass(providerName, providerClass, 'provider')
                 } else {
                     throw utils.unifyErrMesg(`failed to load provider class [${providerName}] from npm package`)
                 }
             }
-            const providerInst = utils.Factory.getInstance(providerName, providerInfo.providerSettings, 'provider')
+            const providerInst = Factory.getInstance(providerName, providerInfo.providerSettings, 'provider')
             if (!providerInst) {
                 throw utils.unifyErrMesg(`failed to instance provider [${providerName}]`, 'deployer', 'provider')
             }
@@ -75,7 +74,7 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
 
         const serviceMap = appMap!.get(app.name)
         if (!serviceMap) continue
-        if (app.code && app.code.locationType === LocationType.file && app.code.location) {
+        if (app.code && app.code.locationType === Sardines.LocationType.file && app.code.location) {
             codeBaseDir = path.resolve(proc.cwd(), app.code.location)
         }
         if (codeBaseDir && fs.existsSync(codeBaseDir)) {

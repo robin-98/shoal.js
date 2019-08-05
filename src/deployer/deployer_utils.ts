@@ -8,60 +8,7 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import * as npm from 'npm'
-import * as utils from 'sardines-utils'
-
-export enum LocationType {
-    npm_link = 'npm_link',
-    npm_install = 'npm_install',
-    file = 'file'
-}
-
-export interface LocationSettings {
-    name?: string
-    locationType: LocationType
-    location?: string
-}
-
-export interface ServiceSettingsForProvider {
-    module: string
-    name: string
-    settings: any
-}
-
-export interface ApplicationSettingsForProvider {
-    application: string
-    commonSettings: any
-    serviceSettings: ServiceSettingsForProvider[]
-}
-
-export interface ProviderSettings {
-    code: LocationSettings
-    providerSettings: any
-    applicationSettings: ApplicationSettingsForProvider[]
-}
-
-export interface ServiceArgument {
-    name: string
-    type: string
-}
-
-export interface ServiceRuntime {
-    service: string
-    arguments?: ServiceArgument[]
-}
-
-export interface ApplicationSettings {
-    name: string
-    code: LocationSettings
-    init: ServiceRuntime[]
-}
-
-
-export interface DeployPlan {
-    providers: ProviderSettings[]
-    applications: ApplicationSettings[]
-}
+import { utils, Sardines } from 'sardines-core'
 
 export const rmdir = (dir: string) => {
     // recursively process directory
@@ -80,77 +27,13 @@ export const rmdir = (dir: string) => {
     }
 }
 
-let npmInst: any = null
-export const npmCmd = (command: string, args: string[]) => {
-    return new Promise((resolve, reject) => {
-        const cmd = () => {
-            (<{[key: string]: any}>(npmInst.commands))[command](args, (err:any, data: any) => {
-                if (err) {
-                    reject(err)
-                } else {
-                    resolve(data)
-                }
-            })
-        }
-        if (!npmInst) {
-            npm.load((err, inst) => {
-                if (err) reject(err)
-                else {
-                    // console.log('npm load data:', data)
-                    npmInst = inst
-                    cmd()
-                }
-            })
-        } else {
-            cmd()
-        }
-    })
-}
 
-export const getPackageFromNpm = async (packName: string, locationType: LocationType, verbose: boolean = false ) =>  {
-    try {
-        const type = locationType || LocationType.npm_install
-        switch (type) {
-        case LocationType.npm_install:
-            if (verbose) {
-                console.log('going to install package:', packName)
-            }
-            await npmCmd('install', [packName])
-            if (verbose) {
-                console.log('package:', packName, 'installed')
-            }
-            break
-        case LocationType.npm_link:
-            if (verbose) {
-                console.log('going to link package:', packName)
-            }
-            await npmCmd('link', [packName])
-            if (verbose) {
-                console.log('package:', packName, 'linked')
-            }
-            break
-        case LocationType.file:
-            break
-        default:
-            break
-        }
-        const packageInst:any = require(packName)
-        if (packageInst) return packageInst.default
-        else return null
-    } catch (e) {
-        if (verbose) {
-            console.error(`ERROR when importing provider class [${packName}]`)
-        }
-        throw utils.unifyErrMesg(`Error when importing npm package [${packName}]: ${e}`, 'deployer', 'npm')
-    }
-}
-
-export const parseDeployPlanFile = async (filepath: string, verbose: boolean = false): Promise<DeployPlan> => {
+export const parseDeployPlanFile = async (filepath: string, verbose: boolean = false): Promise<Sardines.DeployPlan> => {
     if (!fs.existsSync(filepath)) {
         console.error(`Can not access file ${filepath}`)
         throw utils.unifyErrMesg(`Can not access file ${filepath}`, 'deployer', 'settings file')
     }
-    let plan: DeployPlan|null = null
+    let plan: Sardines.DeployPlan|null = null
     try {
         plan = JSON.parse(fs.readFileSync(filepath).toString())
         if (verbose) console.log(`loaded provider setting file ${filepath}`)

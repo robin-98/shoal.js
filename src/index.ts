@@ -7,7 +7,7 @@
  */
 
 import * as deployer from './deployer'
-import * as utils from 'sardines-utils'
+import { utils } from 'sardines-core'
 
 import * as path from 'path'
 import * as proc from 'process'
@@ -18,14 +18,16 @@ export const startRepository = async (repositoryServices: any) => {
         throw utils.unifyErrMesg('repository services are not correctly compiled', 'shoal', 'repository')
     }
     const res = await deployer.deploy(path.resolve(proc.cwd(), './deploy_repository.json'), [repositoryServices], true)
-    console.log(res)
+    console.log('deploy result:', res)
+    return res
 }
 
 const repoServiceFile = path.resolve(proc.cwd(), './repository.json')
 if (fs.existsSync(repoServiceFile)) {
     const repoServices = JSON.parse(fs.readFileSync(repoServiceFile).toString())
     startRepository(repoServices).then(res => {
-        console.log('repository as been started:', res)
+        if (res) console.log('repository as been started:', res)
+        else throw 'deploy failed'
     })
     .catch(e => {
         console.log('ERROR when starting repository:', e)

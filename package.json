@@ -3,21 +3,27 @@
         "email": "robin@naturewake.com",
         "name": "Robin Sun"
     },
+    "bin": {
+        "manage-sardines-repo": "lib/manager/manageRepository.js",
+        "start-sardines-repo": "lib/index.js"
+    },
     "bugs": {
         "url": "https://github.com/robin-98/sardines.shoal.http.js/issues"
     },
     "dependencies": {
         "@types/bcrypt": "^3.0.0",
-        "@types/node": "^12.6.8",
-        "@types/npm": "^2.0.30",
+        "@types/node": "^12.6.9",
+        "@types/semver": "^6.0.1",
         "bcrypt": "^3.0.6",
-        "npm": "^6.10.2",
-        "sardines-core": "file:../sardines.core.js",
-        "sardines-utils": "file:../sardines.utils.js",
-        "typescript": "^3.4.5"
+        "sardines-compile-time-tools": "*",
+        "sardines-built-in-services": "*",
+        "sardines-core": "*",
+        "semver": "^6.3.0",
+        "typescript": "^3.5.3"
     },
     "description": "A built-in service provider for sardines.js",
-    "devDependencies": {},
+    "devDependencies": {
+    },
     "homepage": "https://github.com/robin-98/sardines.shoal.http.js#readme",
     "keywords": [
         "Free-to-Decompose",
@@ -26,22 +32,22 @@
         "FaaS"
     ],
     "license": "ISC",
-    "main": "lib/prod/index.js",
+    "main": "lib/index.js",
     "name": "sardines-shoal",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
     },
     "scripts": {
-        "buildProd": "npm run clearProd && tsc --build conf/tsconfig.prod.json && npm run makeExecProd",
-        "prod": "npm run buildProd && node lib/prod/index.js",
-        "buildDev": " npm run clearDev && tsc --build conf/tsconfig.dev.json && npm run makeExecDev",
-        "dev": "npm run buildDev && node lib/dev/index.js",
+        "build": "npm run compileRepo && npm run reverseCompile && npm run clear && tsc --build conf/tsconfig.json && npm run makeExec",
         "clear": "rm -rf lib/*",
-        "clearDev": "rm -rf lib/dev",
-        "clearProd": "rm -rf lib/prod",
-        "makeExecProd": "file=lib/prod/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
-        "makeExecDev": "file=lib/dev/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chomd a+x $file"
+        "compileRepo": "file=repository.json; rm -f $file && sardines-compiler --application=sardines --recompile --verbose --gen-services=$file ./src/repository/index.ts",
+        "makeExec": "npm run makeExecRepo && npm run makeExecManRepo",
+        "makeExecManRepo": "file=lib/manager/manageRepository.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
+        "makeExecRepo": "file=lib/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
+        "reverseCompile": "sardines-compiler --reverse ./src",
+        "start": "npm run build && node lib/index.js"
     },
-    "version": "0.0.1"
+    "type": "lib/index.d.ts",
+    "version": "0.1.1"
 }

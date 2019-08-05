@@ -48,11 +48,15 @@
             "module": "/repository",
             "arguments": [
                 {
-                    "name": "account",
-                    "type": "Account"
+                    "name": "username",
+                    "type": "string"
                 },
                 {
                     "name": "password",
+                    "type": "string"
+                },
+                {
+                    "name": "token",
                     "type": "string"
                 }
             ],
@@ -203,6 +207,23 @@
                 {
                     "name": "source",
                     "type": "Source"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "fetchServiceRuntime",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "serviceIdentity",
+                    "type": "any"
                 },
                 {
                     "name": "token",

@@ -60,7 +60,7 @@
         "name": "sardines",
         "code": {
             "locationType": "file",
-            "location": "./node_modules/sardines-core/lib/prod"
+            "location": "./lib"
         },
         "init": [{
             "service": "/repository/setup",
