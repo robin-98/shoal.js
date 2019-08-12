@@ -6,28 +6,28 @@
  * @desc [description]
  */
 
-import { RepositorySettings } from './repo_class'
-export { RepositorySettings } from './repo_class'
+import { RepositorySettings } from './repo_static'
+export { RepositorySettings } from './repo_static'
 
-import { RuntimeRepository } from './runtime'
+import { RepositoryLifeCycle, ResourceType } from './repo_life_cycle'
 
 import {
     Account,
     Service,
     Application,
     Source
-} from './repo_class'
+} from './repo_static'
 
 import { utils } from 'sardines-core'
 let { unifyAsyncHandler, unifyErrMesg } = utils
 
-let repoInst: RuntimeRepository|null = null
+let repoInst: RepositoryLifeCycle|null = null
 
 const errRepoNotSetupYet = unifyErrMesg('Repository is not setup yet', 'repository', 'setup')
 
 export const setup = async (settings: RepositorySettings) => {
     if (repoInst) return
-    if (!repoInst) repoInst = new RuntimeRepository()
+    if (!repoInst) repoInst = new RepositoryLifeCycle()
     await repoInst.setup(settings)
 }
 
@@ -99,4 +99,11 @@ export const deleteSource = async (source: Source, token: string) => {
 export const fetchServiceRuntime = async (serviceIdentity: any, token: string) => {
     if (!repoInst) return
     return await unifyAsyncHandler('repository', 'fetch service runtime', repoInst.fetchServiceRuntime, repoInst)(serviceIdentity, token)
+}
+
+export const deployHost = async (data: any, token: string) => {
+    if (!data) return null
+    data.type = ResourceType.host
+    if (!repoInst) return null
+    return await unifyAsyncHandler('repository', 'fetch service runtime', repoInst.deployResource, repoInst)(data, token)
 }

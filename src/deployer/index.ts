@@ -35,21 +35,21 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
     }
 
     const providerInstances: Map<string, any> = new Map()
-    const providerSettingsCache: Map<string, Sardines.ProviderSettings> = new Map()
-    for (let providerInfo of deployPlan.providers) {
+    const providerSettingsCache: Map<string, Sardines.ProviderDefinition> = new Map()
+    for (let providerDefinition of deployPlan.providers) {
         // Get provider settings
         let providerClass: any = null, providerName: string|null = null
-        if (providerInfo.code && providerInfo.code.name) {
-            providerName = providerInfo.code.name
+        if (providerDefinition.code && providerDefinition.code.name) {
+            providerName = providerDefinition.code.name
             if (!Factory.getClass(providerName)) {
-                providerClass = await Source.getPackageFromNpm(providerName, providerInfo.code.locationType, verbose)
+                providerClass = await Source.getPackageFromNpm(providerName, providerDefinition.code.locationType, verbose)
                 if (providerClass) {
                     Factory.setClass(providerName, providerClass, 'provider')
                 } else {
                     throw utils.unifyErrMesg(`failed to load provider class [${providerName}] from npm package`)
                 }
             }
-            const providerInst = Factory.getInstance(providerName, providerInfo.providerSettings, 'provider')
+            const providerInst = Factory.getInstance(providerName, providerDefinition.providerSettings, 'provider')
             if (!providerInst) {
                 throw utils.unifyErrMesg(`failed to instance provider [${providerName}]`, 'deployer', 'provider')
             }
@@ -57,7 +57,7 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
             if (verbose) {
                 console.log(`loaded provider [${providerName}]`)
             }
-            providerSettingsCache.set(providerName, providerInfo)
+            providerSettingsCache.set(providerName, providerDefinition)
         }
     }
     
@@ -68,6 +68,7 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
     }
     const sourceFiles: Map<string,{[key: string]: any}> = new Map()
     for (let app of deployPlan.applications) {
+        let appName = app.name
         let codeBaseDir = null
         if (!app.name || typeof app.name !== 'string') continue
         if (!appMap!.has(app.name)) continue
@@ -121,7 +122,7 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
                     }
                     // register service on the provider instance
                     try {
-                        await providerInst.registerService(service, handler, additionalServiceSettings)
+                        await providerInst.registerService(appName, service, handler, additionalServiceSettings)
                         if (verbose) {
                             console.log(`service [${serviceId}] has been registered`)
                         }

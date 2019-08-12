@@ -60,3 +60,16 @@ export const getServiceDefinitionsMap = (applications: any[]): Map<string, Map<s
     }
     return appMap
 }
+
+export const getRepositoryEntiryAddressesFromDeployPlan = (deployPlan: Sardines.DeployPlan): Sardines.ProviderPublicInfo[] => {
+    let providers: Sardines.ProviderPublicInfo[] = []
+    if (deployPlan && deployPlan.providers) {
+        for (let provider of deployPlan.providers) {
+            if (provider.providerSettings && provider.providerSettings.public && provider.code && provider.code.name) {
+                providers.push(provider.providerSettings.public)
+            }
+        }
+    }
+    return providers
+}
+

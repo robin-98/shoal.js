@@ -11,19 +11,18 @@
         "url": "https://github.com/robin-98/sardines.shoal.http.js/issues"
     },
     "dependencies": {
-        "@types/bcrypt": "^3.0.0",
         "@types/node": "^12.6.9",
         "@types/semver": "^6.0.1",
-        "bcrypt": "^3.0.6",
-        "sardines-compile-time-tools": "*",
+        "@types/systeminformation": "^3.23.1",
         "sardines-built-in-services": "*",
+        "sardines-compile-time-tools": "*",
         "sardines-core": "*",
         "semver": "^6.3.0",
+        "systeminformation": "^4.14.4",
         "typescript": "^3.5.3"
     },
     "description": "A built-in service provider for sardines.js",
-    "devDependencies": {
-    },
+    "devDependencies": {},
     "homepage": "https://github.com/robin-98/sardines.shoal.http.js#readme",
     "keywords": [
         "Free-to-Decompose",
@@ -39,13 +38,14 @@
         "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
     },
     "scripts": {
-        "build": "npm run compileRepo && npm run reverseCompile && npm run clear && tsc --build conf/tsconfig.json && npm run makeExec",
+        "build": "npm run compileRepo && npm run reverseCompile && npm run publishRepositoryInterfaces && npm run clear && tsc --build conf/tsconfig.json && npm run makeExec",
         "clear": "rm -rf lib/*",
         "compileRepo": "file=repository.json; rm -f $file && sardines-compiler --application=sardines --recompile --verbose --gen-services=$file ./src/repository/index.ts",
         "makeExec": "npm run makeExecRepo && npm run makeExecManRepo",
         "makeExecManRepo": "file=lib/manager/manageRepository.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "makeExecRepo": "file=lib/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "reverseCompile": "sardines-compiler --reverse ./src",
+        "publishRepositoryInterfaces": "./bin/publish_repository_service_definitions_to_core_project.py repository.json ../sardines.core.js/src/repository_services.ts",
         "start": "npm run build && node lib/index.js"
     },
     "type": "lib/index.d.ts",

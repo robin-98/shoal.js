@@ -17,7 +17,7 @@ export const startRepository = async (repositoryServices: any) => {
     if (!repositoryServices) {
         throw utils.unifyErrMesg('repository services are not correctly compiled', 'shoal', 'repository')
     }
-    const res = await deployer.deploy(path.resolve(proc.cwd(), './deploy_repository.json'), [repositoryServices], true)
+    const res = await deployer.deploy(path.resolve(proc.cwd(), './deploy-repository-dev.json'), [repositoryServices], true)
     console.log('deploy result:', res)
     return res
 }
