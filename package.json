@@ -45,7 +45,7 @@
         "makeExecManRepo": "file=lib/manager/manageRepository.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "makeExecRepo": "file=lib/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "reverseCompile": "sardines-compiler --reverse ./src",
-        "publishRepositoryInterfaces": "./bin/publish_repository_service_definitions_to_core_project.py repository.json ../sardines.core.js/src/repository_services.ts",
+        "publishRepositoryInterfaces": "file=./bin/publish_repository_service_definitions_to_core_project.py; if [ -f $file ];then $file repository.json ../sardines.core.js/src/repository_services.ts; fi",
         "start": "npm run build && node lib/index.js"
     },
     "type": "lib/index.d.ts",

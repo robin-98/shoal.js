@@ -3,7 +3,7 @@ export * from './repo_runtime'
 
 export class RepositoryLifeCycle extends RepositoryRuntime {
   private intervalHeartbeat: any = null
-  private heartbeatTimespan: number = 60 * 1000
+  private heartbeatTimespan: number = 600 * 1000
   constructor() {
     super()
     this.startHeartbeat()
