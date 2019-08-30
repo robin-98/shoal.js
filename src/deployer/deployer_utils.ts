@@ -45,9 +45,9 @@ export const parseDeployPlanFile = async (filepath: string, verbose: boolean = f
     return plan!
 }
 
-export const getServiceDefinitionsMap = (applications: any[]): Map<string, Map<string, any>>|null => {
+export const getServiceDefinitionsMap = (applications: any[]): Map<string, Map<string, Sardines.Service>>|null => {
     if (!applications && !Array.isArray(applications)) return null
-    let appMap: Map<string, Map<string, any>> = new Map()
+    let appMap: Map<string, Map<string, Sardines.Service>> = new Map()
     for (let servDefs of applications) {
         if (!servDefs.application || typeof servDefs.application !== 'string') continue
         if (!servDefs || !servDefs.services || !Array.isArray(servDefs.services) || servDefs.services.length === 0) continue

@@ -67,6 +67,10 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
         throw utils.unifyErrMesg(`Can not parse service definitions`, 'shoal', 'deploy')
     }
     const sourceFiles: Map<string,{[key: string]: any}> = new Map()
+
+    // Begin to deploy applications
+    const result: Sardines.Runtime.DeployResult = {}
+
     for (let app of deployPlan.applications) {
         let appName = app.name
         let codeBaseDir = null
@@ -75,15 +79,24 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
 
         const serviceMap = appMap!.get(app.name)
         if (!serviceMap) continue
+
+        // prepare the source code
         if (app.code && app.code.locationType === Sardines.LocationType.file && app.code.location) {
             codeBaseDir = path.resolve(proc.cwd(), app.code.location)
         }
+
+        // Get the application version
+        // TODO: use git parse current version
+        const appVersion = app.version
+
+        // Begin to deploy services
+        result[appName] = []
         if (codeBaseDir && fs.existsSync(codeBaseDir)) {
             let keys = serviceMap.keys()
             let i = keys.next()
             while (!i.done) {
                 const serviceId = i.value
-                let service = serviceMap.get(serviceId)
+                let service = serviceMap.get(serviceId)!
                 if (!service.filepath) {
                     throw utils.unifyErrMesg(`File path is missing: service [${serviceId}]`, 'shoal', 'deploy')
                 }
@@ -96,16 +109,30 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
                 if (!handler) {
                     throw utils.unifyErrMesg(`Can not get handler from source code file for service [${serviceId}]`, 'shoal', 'deploy')
                 }
+                // prepare to register service
+                const serviceRuntime: Sardines.Runtime.Service = {
+                    identity: {
+                        application: appName,
+                        module: service.module,
+                        name: service.name,
+                        version: appVersion
+                    },
+                    arguments: service.arguments,
+                    returnType: service.returnType,
+                    entries: []
+                }
                 // register handler on all provider instances
                 let providerNames = providerInstances.keys()
                 let name = providerNames.next()
                 while (!name.done) {
-                    const providerInst = providerInstances.get(name.value)
+                    const providerName = name.value
+                    const providerInst = providerInstances.get(providerName)
                     // Get additional settings for the service on the provider
-                    let providerSettings = providerSettingsCache.get(name.value)
+                    let providerSettings = providerSettingsCache.get(providerName)
                     name = providerNames.next()
                     let additionalServiceSettings:any = null
 
+                    // additionalServiceSettings is serviceSettings for provider
                     if (providerSettings!.applicationSettings && Array.isArray(providerSettings!.applicationSettings)) {
                         for (let appSettingsForProvider of providerSettings!.applicationSettings) {
                             let commonSettings = appSettingsForProvider.commonSettings? Object.assign({}, appSettingsForProvider.commonSettings):{}
@@ -126,30 +153,52 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
                         if (verbose) {
                             console.log(`service [${serviceId}] has been registered`)
                         }
+                        const providerDefinition = providerSettingsCache.get(providerName)
+                        const providerPublicInfo = providerInst.info || providerDefinition!.providerSettings.public
+
+                        const serviceEntry: Sardines.Runtime.ServiceEntry = {
+                            type: (providerPublicInfo) ? Sardines.Runtime.ServiceEntryType.dedicated: Sardines.Runtime.ServiceEntryType.proxy,
+                            providerName: providerName
+                        }
+                        if (providerPublicInfo) {
+                            serviceEntry.providerInfo = providerPublicInfo
+                            if (additionalServiceSettings) {
+                                serviceEntry.serviceSettings = additionalServiceSettings
+                            }
+                        }
+
+                        serviceRuntime.entries.push(serviceEntry)
                     } catch (e) {
                         if (verbose) console.error(`ERROR when registering service [${serviceId}]`, e)
                         throw utils.unifyErrMesg(`Can not register service [${serviceId}]`, 'shoal', 'deploy')
                     }
                 }
                 i = keys.next()
+                // Service register is done on all providers
+                if (serviceRuntime.entries.length > 0) {
+                    result[appName].push(serviceRuntime)
+                } else {
+                    const errMsg = `Failed to register service [${appName}:${serviceId}] on all providers`
+                    if (verbose) console.error(errMsg)
+                    throw utils.unifyErrMesg(errMsg, 'shoal', 'deploy')
+                }
             }
 
             if (app.init && app.init.length > 0) {
-                for (let serviceRuntime of app.init) {
-                    let service = serviceMap.get(serviceRuntime.service)
+                for (let serviceRuntimeSettings of app.init) {
+                    let service = serviceMap.get(serviceRuntimeSettings.service)!
                     let sourceCodeFile = getSourceCodeFilePath(path.resolve(codeBaseDir, './' + service.filepath))
                     if (fs.existsSync(sourceCodeFile)) {
                         let handler = require(sourceCodeFile)[service.name]
-                        if (serviceRuntime.arguments) {
-                            const res = await handler(...serviceRuntime.arguments)
-                            return res
+                        if (serviceRuntimeSettings.arguments) {
+                            await handler(...serviceRuntimeSettings.arguments)
                         }
                     }
                 }
             }
         }
     }
-    return null
+    return result
 }
 
 export const exec = async (serviceDefinitions: any) => {
@@ -169,4 +218,5 @@ export const exec = async (serviceDefinitions: any) => {
         }
         return await deploy(params.deploy_plan_file, serviceDefs, params.verbose)
     }
+    return null
 }

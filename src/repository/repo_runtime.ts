@@ -148,7 +148,7 @@ export class RepositoryRuntime extends RepositoryStatic {
     if (Array.isArray(serviceIdentity)) {
       let res = []
       for (let i=0; i<serviceIdentity.length; i++) {
-        let resItem: Sardines.ServiceRuntime|null = await this.fetchServiceRuntime(serviceIdentity, token, bypassToken=true)
+        let resItem: Sardines.Runtime.Service|null = await this.fetchServiceRuntime(serviceIdentity, token, bypassToken=true)
         res.push(resItem)
       }
       return res

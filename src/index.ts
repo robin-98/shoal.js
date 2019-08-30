@@ -18,7 +18,7 @@ export const startRepository = async (repositoryServices: any) => {
         throw utils.unifyErrMesg('repository services are not correctly compiled', 'shoal', 'repository')
     }
     const res = await deployer.deploy(path.resolve(proc.cwd(), './deploy-repository-dev.json'), [repositoryServices], true)
-    console.log('deploy result:', res)
+    // console.log('deploy result:', utils.inspect(res))
     return res
 }
 
@@ -26,7 +26,7 @@ const repoServiceFile = path.resolve(proc.cwd(), './repository.json')
 if (fs.existsSync(repoServiceFile)) {
     const repoServices = JSON.parse(fs.readFileSync(repoServiceFile).toString())
     startRepository(repoServices).then(res => {
-        if (res) console.log('repository as been started:', res)
+        if (res) console.log('repository as been started')
         else throw 'deploy failed'
     })
     .catch(e => {

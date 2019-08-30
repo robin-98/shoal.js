@@ -28,7 +28,7 @@ const errRepoNotSetupYet = unifyErrMesg('Repository is not setup yet', 'reposito
 export const setup = async (settings: RepositorySettings) => {
     if (repoInst) return
     if (!repoInst) repoInst = new RepositoryLifeCycle()
-    await repoInst.setup(settings)
+    return await repoInst.setup(settings)
 }
 
 // Account

@@ -63,6 +63,7 @@
             "locationType": "file",
             "location": "./lib"
         },
+        "version": "*",
         "init": [{
             "service": "/repository/setup",
             "arguments": [{
