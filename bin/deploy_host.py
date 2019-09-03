@@ -14,6 +14,11 @@ argParser.add_argument('--ipv6', type=str, required=False, help='IPv6 address of
 argParser.add_argument('--node-bin', type=str, required=False, default='./bin/node-v12.8.0-linux-x64.tar.xz', help='Node binary package to be copied to remote host')
 argParser.add_argument('--shoal-pkg', type=str, required=False, default=cwd, help='Sardines shoal source package location')
 argParser.add_argument('--repo-deploy-file', type=str, required=True, help='The sardines repository used to manage the resource')
+argParser.add_argument('--public-protocol', type=str, required=False, default='HTTP', help='Public protocol to connect the host')
+argParser.add_argument('--public-host', type=str, required=True, help='Public name to connect the host')
+argParser.add_argument('--public-port', type=str, required=True, help='Public port of HTTP/HTTPS protocol to connect the host')
+argParser.add_argument('--public-root', type=str, required=False, default='/', help='Public subpath of HTTP/HTTPS address to access the host')
+
 
 args = argParser.parse_args()
 target_addr = args.host_name
@@ -25,6 +30,16 @@ if not target_addr:
 if not target_addr: 
   print('invalid target host')
   sys.exit(1)
+
+# Prepare public info
+publicInfo = {
+  "root": args.public_root,
+  "port": args.public_port,
+  "host": args.public_host,
+  "protocol": args.public_protocol
+}
+
+# Prepare host ssh access info
 
 os_user = args.os_user
 node_bin = args.node_bin
