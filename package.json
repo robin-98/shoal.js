@@ -46,7 +46,9 @@
         "makeExecRepo": "file=lib/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "reverseCompile": "sardines-compiler --reverse ./src",
         "publishRepositoryInterfaces": "file=./bin/publish_repository_service_definitions_to_core_project.py; if [ -f $file ];then $file repository.json ../sardines.core.js/src/repository_services.ts; fi",
-        "start": "npm run build && node lib/index.js"
+        "start": "npm run build && node lib/index.js",
+        "test": "npm run build && node lib/agent/host_perf.js test",
+        "testDeployHost": "./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json"
     },
     "type": "lib/index.d.ts",
     "version": "0.1.2"

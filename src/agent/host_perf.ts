@@ -240,10 +240,13 @@ export const getCurrentLoad = async (): Promise<SystemLoad|null> => {
   lastTimestamp = now
   return perf
 }
-getCurrentLoad().then(() => {
-  setTimeout(()=>{
-    getCurrentLoad().then(perf => {
-      console.log(perf)
-    })
-  }, 3000)
-})
+
+if (proc.argv[proc.argv.length - 1] === 'test') {
+  getCurrentLoad().then(() => {
+    setTimeout(()=>{
+      getCurrentLoad().then(perf => {
+        console.log(perf)
+      })
+    }, 3000)
+  })
+}
