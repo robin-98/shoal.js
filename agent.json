@@ -14,12 +14,12 @@
             "filepath": "/agent/index.ts"
         },
         {
-            "name": "startHostStat",
+            "name": "startHost",
             "module": "/agent",
             "arguments": [
                 {
-                    "name": "hostId",
-                    "type": "string"
+                    "name": "hostInfo",
+                    "type": "Resource"
                 },
                 {
                     "name": "heartbeatInterval",

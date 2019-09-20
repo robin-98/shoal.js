@@ -127,7 +127,7 @@ ssh_exec('npm run stop', work_dir=remote_work_dir, env='node')
 # Build sardines.shoal on remote host
 ssh_exec('npm i && npm run build', work_dir=remote_work_dir, env='node')
 
-# Generate sardines.shoal.agent deploy plan
+# prepare sardines.shoal.agent deploy plan
 agent_deploy_plan = {
   "providers": [],
   "applications": [{
@@ -141,43 +141,66 @@ agent_deploy_plan = {
       "service": "/agent/setupRepositoryEntries",
       "arguments": []
     }, {
-      "service": "/agent/startHostStat",
-      "arguments": [target_addr, 60000]
+      "service": "/agent/startHost",
+      "arguments": []
     }]
   }]
 }
 
+# prepare agent provider settings
+for i in range(0, len(providers)):
+  provider = providers[i]
+  settings = providerSettings[i]
+  agent_deploy_plan["providers"].append({
+    "code": {
+        "name": provider,
+        "locationType": "npm"
+    }, 
+    "providerSettings": settings
+  })
+
+# prepare repository entries for init service '/agent/setupRepositoryEntries'
+shoalUser = None
+for app in repoDeployPlan['applications']:
+  if 'name' in app and app['name'] == 'sardines' and 'init' in app:
+    for item in app['init']:
+      if 'service' in item and item['service'] == '/repository/setup':
+        shoalUser = item['arguments'][0]['shoalUser']
+
+repoEntries = []
+for provider in repoDeployPlan['providers']:
+  settings = provider['providerSettings']
+  publicInfo = settings['public']
+  repoEntries.append({
+    "providerInfo": publicInfo,
+    "user": shoalUser['name'],
+    "password": shoalUser['password']
+  })
+
+agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(repoEntries)
+
+# Prepare host info
+host_info = {
+  "name": target_addr,
+  "account": args.os_user,
+  "address": {},
+  "providers": agent_deploy_plan["providers"]
+}
+if args.ipv4 is not None:
+  host_info["address"]["ipv4"] = args.ipv4
+
+if args.ipv6 is not None:
+  host_info["address"]["ipv6"] = args.ipv6
+
+if args.ssh_port is not None:
+  host_info["address"]["ssh_port"] = args.ssh_port
+
+# set host info as parameter for init service '/agent/startHost'
+agent_deploy_plan['applications'][0]['init'][1]['arguments'].append(host_info)
+agent_deploy_plan['applications'][0]['init'][1]['arguments'].append(60000)
+
+# generate deploy plan file for agent services
 try:
-  for i in range(0, len(providers)):
-    provider = providers[i]
-    settings = providerSettings[i]
-    agent_deploy_plan["providers"].append({
-      "code": {
-          "name": provider,
-          "locationType": "npm"
-      }, 
-      "providerSettings": settings
-    })
-
-  shoalUser = None
-  for app in repoDeployPlan['applications']:
-    if 'name' in app and app['name'] == 'sardines' and 'init' in app:
-      for item in app['init']:
-        if 'service' in item and item['service'] == '/repository/setup':
-          shoalUser = item['arguments'][0]['shoalUser']
-
-  repoEntries = []
-  for provider in repoDeployPlan['providers']:
-    settings = provider['providerSettings']
-    publicInfo = settings['public']
-    repoEntries.append({
-      "providerInfo": publicInfo,
-      "user": shoalUser['name'],
-      "password": shoalUser['password']
-    })
-
-  agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(repoEntries)
-
   agentDeployPlanFile = args.shoal_pkg + '/' + 'deploy-agent.json'
   with open(agentDeployPlanFile,'w') as f:
     json.dump(agent_deploy_plan, f, indent = 4)
@@ -190,3 +213,5 @@ except Exception as e:
 
 # Start sardines.shoal.agent service
 ssh_exec('nohup npm run startAgent > agent.log 2>1 &', work_dir=remote_work_dir, env='node')
+
+

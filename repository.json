@@ -252,7 +252,24 @@
             "filepath": "/repository/index.ts"
         },
         {
-            "name": "hostHeartbeat",
+            "name": "resourceHeartbeat",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "data",
+                    "type": "any"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "updateResourceInfo",
             "module": "/repository",
             "arguments": [
                 {

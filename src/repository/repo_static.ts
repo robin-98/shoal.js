@@ -84,19 +84,21 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         deploy_job_ticket: 'VARCHAR(100)',
         status: 'VARCHAR(30)',
         workload_percentage: 'SMALLINT DEFAULT 100',    // when resource is ready, it will update this value by itself to open for serving requests
-        name: 'VARCHAR(200)',
+        name: 'VARCHAR(200) NOT NULL',
         account: 'VARCHAR(50)',
-        type: 'VARCHAR(100)',
+        type: 'VARCHAR(100) NOT NULL',
         tags: 'VARCHAR(50)[]',
         address: {
             ipv4: 'VARCHAR(15)',
-            port: 'INT',
+            ssh_port: 'INT',
             ipv6: 'VARCHAR(60)'
         },
-        running_apps: 'INT',
-        running_services: 'INT',
+        providers: 'JSONB',
+        running_apps: 'INT DEFAULT 0',
+        running_services: 'INT DEFAULT 0',
         cpu_cores: 'SMALLINT',
-        mem_megabytes: 'INT'
+        mem_megabytes: 'INT',
+        UNIQUE: ['type', 'name', 'account']
     },
     resource_performance: {
         create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
@@ -104,7 +106,7 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         cpu: { 
             count: 'SMALLINT',
             load: 'NUMERIC(3,1)',
-            user: 'NUMERIC(3,1)',
+            usr: 'NUMERIC(3,1)',
             sys: 'NUMERIC(3,1)',
             idle: 'NUMERIC(3,1)',
             irq: 'NUMERIC(3,1)',
@@ -122,7 +124,7 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
             swap_change: 'INT' 
         },
         proc: {
-            all: 'SMALLINT',
+            all_processes: 'SMALLINT',
             running: 'SMALLINT',
             blocked: 'SMALLINT',
             sleeping: 'SMALLINT',
@@ -168,9 +170,11 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
             rx_sec: 'INT',
             tx_sec: 'INT',
         },
-        timespan_sec: 'INT',
+        timespan_sec: 'NUMERIC(6,1)',
         checkAt: 'TIMESTAMP(3)',
-        host: 'VARCHAR(200)'
+        name: 'VARCHAR(200)',
+        account: 'VARCHAR(50)',
+        type: 'VARCHAR(100)'
     }
 }
 
@@ -258,10 +262,10 @@ export class RepositoryStatic extends PostgresTempleteAccount {
         
         try {
             for (let i = 0; i<accountToCreate.length; i++) {
-                let account = await this.queryAccount(accountToCreate[i])
-                if (!account) {
-                    account = accountToCreate[i]
-                    let accountInDB = Object.assign({}, account)
+                let accountInDB = await this.queryAccount(accountToCreate[i])
+                if (!accountInDB) {
+                    let account = accountToCreate[i]
+                    accountInDB = Object.assign({}, account)
                     const extraProps = ['can_login']
                     if (i===0) Array.prototype.push.apply(extraProps, ['can_create_application', 'can_create_service', 'can_manage_repository', 'can_manage_accounts'])
                     for (let prop of extraProps) {
@@ -269,6 +273,10 @@ export class RepositoryStatic extends PostgresTempleteAccount {
                     }
                     accountInDB = await this.createOrUpdateAccount(accountInDB)
                     accountInDB = Object.assign(accountInDB, account)
+                    if (i===0) this.owner = accountInDB
+                    else this.shoalUser = accountInDB
+                } 
+                if (accountInDB) {
                     if (i===0) this.owner = accountInDB
                     else this.shoalUser = accountInDB
                 }

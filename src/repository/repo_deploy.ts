@@ -7,54 +7,23 @@
  */
 
 import { RepositoryLifeCycle, Service } from './repo_lifecycle'
-import { Sardines } from 'sardines-core'
-import { utils } from 'sardines-core'
+import { utils, Sardines } from 'sardines-core'
 
-export enum LoadBalancingStrategy {
-  workloadFocusing = 'workloadFocusing',
-  evenWorkload = 'evenWorkload',
-  random = 'random'
-}
+
 
 export const workloadThreshold = 85
 export const retryLimit = 3
 export const deploymentFailureLimitInSeconds = 300
-export const defaultLoadBalancingStrategy = LoadBalancingStrategy.workloadFocusing
+export const defaultLoadBalancingStrategy = Sardines.Runtime.LoadBalancingStrategy.workloadFocusing
 
-export enum RuntimeStatus {
-  ready = 'ready',
-  pending = 'pending',
-  deploying = 'deploying'
-}
-
-export enum ResourceType {
-  host = 'host'
-}
-
-export enum RuntimeTargetType {
-  service = 'service',
-  host = 'host',
-}
 
 export interface  RuntimeQueryObject {
   name?: string
-  type?: ResourceType
+  type?: Sardines.Runtime.ResourceType
   account?: string
   service_id?: string
-  status?: RuntimeStatus
+  status?: Sardines.Runtime.RuntimeStatus
   workload_percentage?: string
-}
-
-export interface Resource {
-  name: string
-  account: string
-  tags?: string[]
-  type?: ResourceType
-  address?: {
-    ipv4?: string
-    port?: number
-    ipv6?: string
-  }
 }
 
 export class RepositoryDeployment extends RepositoryLifeCycle {
@@ -62,11 +31,11 @@ export class RepositoryDeployment extends RepositoryLifeCycle {
     super()
   }
 
-  protected async findAvailableRuntime(type:RuntimeTargetType, target: Service|Resource, strategy: LoadBalancingStrategy = defaultLoadBalancingStrategy) {
+  protected async findAvailableRuntime(type:Sardines.Runtime.RuntimeTargetType, target: Service|Sardines.Runtime.Resource, strategy: Sardines.Runtime.LoadBalancingStrategy = defaultLoadBalancingStrategy) {
     let { runtimeObj, table } = this.getRuntimeQueryObj(type, target)
-    runtimeObj.status = RuntimeStatus.ready
+    runtimeObj.status = Sardines.Runtime.RuntimeStatus.ready
     runtimeObj.workload_percentage = `lt:${workloadThreshold}`
-    const orderby = { workload_percentage: strategy === LoadBalancingStrategy.workloadFocusing ? -1 : 1}
+    const orderby = { workload_percentage: strategy === Sardines.Runtime.LoadBalancingStrategy.workloadFocusing ? -1 : 1}
     let runtimeInst = await this.db!.get(table, runtimeObj, orderby, 1)
     return runtimeInst
   }
@@ -80,20 +49,20 @@ export class RepositoryDeployment extends RepositoryLifeCycle {
     return `${result}${Date.now()}`
   }
 
-  private getRuntimeQueryObj(type: RuntimeTargetType, target: Service|Resource) {
+  private getRuntimeQueryObj(type: Sardines.Runtime.RuntimeTargetType, target: Service|Sardines.Runtime.Resource) {
     let runtimeObj: RuntimeQueryObject|null = null, table = null
     switch (type) {
-      case RuntimeTargetType.service:
+      case Sardines.Runtime.RuntimeTargetType.service:
         runtimeObj = {
           service_id: (<Service>target).id,
         }
         table = 'service_runtime'
         break
-      case RuntimeTargetType.host: default: 
+      case Sardines.Runtime.RuntimeTargetType.host: default: 
         runtimeObj = {
-          name: (<Resource>target).name,
-          type: (<Resource>target).type,
-          account: (<Resource>target).account,
+          name: (<Sardines.Runtime.Resource>target).name,
+          type: (<Sardines.Runtime.Resource>target).type,
+          account: (<Sardines.Runtime.Resource>target).account,
         }
         table = 'resource'
         break
@@ -101,12 +70,12 @@ export class RepositoryDeployment extends RepositoryLifeCycle {
     return { runtimeObj, table }
   }
 
-  protected async raceToDeploy(type: RuntimeTargetType,  target: Service|Resource, retry: number = 0 ): Promise<{permission: boolean, runtime: any}|null> {
+  protected async raceToDeploy(type: Sardines.Runtime.RuntimeTargetType,  target: Service|Sardines.Runtime.Resource, retry: number = 0 ): Promise<{permission: boolean, runtime: any}|null> {
     // Create a deployment job, race a ticket
     let deploy_job_ticket = this.genDeployJobTicket()
 
     let { runtimeObj, table } = this.getRuntimeQueryObj(type, target)
-    runtimeObj.status = RuntimeStatus.deploying
+    runtimeObj.status = Sardines.Runtime.RuntimeStatus.deploying
     
     try {
       await this.db!.set(table, Object.assign({}, runtimeObj, {deploy_job_ticket}))
@@ -155,7 +124,7 @@ export class RepositoryDeployment extends RepositoryLifeCycle {
     } else {
       let service = await this.queryService(serviceIdentity, token, bypassToken = true)
       if (service) {
-        let runtime = await this.findAvailableRuntime(RuntimeTargetType.service, service)
+        let runtime = await this.findAvailableRuntime(Sardines.Runtime.RuntimeTargetType.service, service)
         if (!runtime) {
           // notify someone to deploy one instance
           runtime = await this.deployService(service)
@@ -167,7 +136,7 @@ export class RepositoryDeployment extends RepositoryLifeCycle {
   }
 
   protected async deployService(service: Service) {
-    const race = await this.raceToDeploy(RuntimeTargetType.service, service)
+    const race = await this.raceToDeploy(Sardines.Runtime.RuntimeTargetType.service, service)
     if (!race) {
       // Database is broken
       return null
@@ -206,16 +175,16 @@ export class RepositoryDeployment extends RepositoryLifeCycle {
     }
     if (!resource.name) throw utils.unifyErrMesg('invalid resource data', 'sardines', 'repository')
     resource.account = resourceData.account || 'sardines'
-    resource.type = resourceData.type || ResourceType.host
+    resource.type = resourceData.type || Sardines.Runtime.ResourceType.host
 
     // Race to deploy the resource
-    let resourceRuntimeObj: Resource = {name: resource.name, account: resource.account, type: resource.type}
+    let resourceRuntimeObj: Sardines.Runtime.Resource = {name: resource.name, account: resource.account, type: resource.type}
 
     // Check if resource exists
-    let resourceInst = await this.db!.get('resource', Object.assign({}, resourceRuntimeObj, {status: RuntimeStatus.ready}), null, 1)
+    let resourceInst = await this.db!.get('resource', Object.assign({}, resourceRuntimeObj, {status: Sardines.Runtime.RuntimeStatus.ready}), null, 1)
     if (resourceInst) return null
 
-    let race = await this.raceToDeploy(RuntimeTargetType.host, resourceRuntimeObj)
+    let race = await this.raceToDeploy(Sardines.Runtime.RuntimeTargetType.host, resourceRuntimeObj)
     if (!race) {
       return null
     } else if (race.permission) {
@@ -229,4 +198,22 @@ export class RepositoryDeployment extends RepositoryLifeCycle {
     console.log('going to deploy agent on resource:', resourceInst)
   }
 
+  public async createOrUpdateResourceInfo(resourceInfo: Sardines.Runtime.Resource, token: string) {
+    let tokenObj = await this.validateToken(token, true)
+    if (!this.shoalUser || !this.shoalUser.id 
+      || !tokenObj || !tokenObj.account_id || tokenObj.account_id !== this.shoalUser.id) {
+      throw 'Unauthorized user'
+    }
+    if (resourceInfo.address && Object.keys(resourceInfo.address).length === 0) {
+      delete resourceInfo.address
+    }
+    const resourceIdentity ={name: resourceInfo.name, account: resourceInfo.account, type: resourceInfo.type}
+    let resourceInDB = await this.db!.get('resource', resourceIdentity)
+    if (resourceInDB) {
+      await this.db!.set('resource', resourceInfo, resourceIdentity)
+      return await this.db!.get('resource', resourceIdentity)
+    } else {
+      return await this.db!.set('resource', resourceInfo)
+    }
+  }
 }

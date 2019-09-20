@@ -58,9 +58,44 @@
                     ]
                 },
                 {
-                    "service": "/agent/startHostStat",
+                    "service": "/agent/startHost",
                     "arguments": [
-                        "nw-dev01",
+                        {
+                            "name": "nw-dev01",
+                            "account": "rin",
+                            "address": {},
+                            "providers": [
+                                {
+                                    "code": {
+                                        "name": "sardines-service-provider-http",
+                                        "locationType": "npm"
+                                    },
+                                    "providerSettings": {
+                                        "host": "0.0.0.0",
+                                        "port": 8081,
+                                        "protocol": "http",
+                                        "root": "/",
+                                        "bodyParser": {
+                                            "formLimit": "10m",
+                                            "jsonLimit": "10m",
+                                            "textLimit": "10m"
+                                        },
+                                        "safeGuard": true,
+                                        "cors": {
+                                            "credentials": true
+                                        },
+                                        "syslog": true,
+                                        "public": {
+                                            "protocol": "http",
+                                            "host": "nw-dev01",
+                                            "root": "/",
+                                            "port": 8081,
+                                            "driver": "sardines-service-driver-http"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
                         60000
                     ]
                 }

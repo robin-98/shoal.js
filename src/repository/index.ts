@@ -9,9 +9,7 @@
 import { RepositorySettings } from './repo_static'
 export { RepositorySettings } from './repo_static'
 
-import { RepositoryRuntime } from './repo_runtime'
-
-import { ResourceType } from './repo_deploy'
+import { RepositoryRuntime as Repository } from './repo_runtime'
 
 import {
     Account,
@@ -20,16 +18,16 @@ import {
     Source
 } from './repo_static'
 
-import { utils } from 'sardines-core'
+import { utils, Sardines } from 'sardines-core'
 let { unifyAsyncHandler, unifyErrMesg } = utils
 
-let repoInst: RepositoryRuntime|null = null
+let repoInst: Repository|null = null
 
 const errRepoNotSetupYet = unifyErrMesg('Repository is not setup yet', 'repository', 'setup')
 
 export const setup = async (settings: RepositorySettings) => {
     if (repoInst) return
-    if (!repoInst) repoInst = new RepositoryRuntime()
+    if (!repoInst) repoInst = new Repository()
     return await repoInst.setup(settings)
 }
 
@@ -105,13 +103,19 @@ export const fetchServiceRuntime = async (serviceIdentity: any, token: string) =
 
 export const deployHost = async (data: any, token: string) => {
     if (!data) return null
-    data.type = ResourceType.host
+    data.type = Sardines.Runtime.ResourceType.host
     if (!repoInst) return null
     return await unifyAsyncHandler('repository', 'fetch service runtime', repoInst.deployResource, repoInst)(data, token)
 }
 
-export const hostHeartbeat = async(data: any, token: string) => {
-    console.log('heartbeat:', data)
-    console.log('token:', token)
-    console.log('')
+export const resourceHeartbeat = async(data: any, token: string) => {
+    if (!data) return null
+    if (!repoInst) return null
+    return await unifyAsyncHandler('repository', 'resource heartbeat', repoInst.resourceHeartbeat, repoInst)(data, token)
+}
+
+export const updateResourceInfo = async(data: any, token: string) => {
+    if (!data) return null
+    if (!repoInst) return null
+    return await unifyAsyncHandler('repository', 'update resource info', repoInst.createOrUpdateResourceInfo, repoInst)(data, token)
 }

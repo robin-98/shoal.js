@@ -1,81 +1,10 @@
 import * as si from 'systeminformation'
 import * as proc from 'process'
+import { Sardines } from 'sardines-core'
+import { SystemLoad } from '../interfaces/system_load'
 
 export const maxNameLength = 30
 export const maxDeviceSummaryLength = 300
-
-export interface SystemLoad {
-  cpu: { 
-    count: number,
-    load: number,
-    user: number,
-    sys: number,
-    idle: number,
-    irq: number,
-    count_change: number
-  },
-  mem: {
-    total: number,
-    free: number,
-    used: number,
-    active: number,
-    swaptotal: number,
-    swapused: number,
-    swapfree: number,
-    mem_change: number,
-    swap_change: number
-  },
-  proc: {
-    all: number,
-    running: number,
-    blocked: number,
-    sleeping: number,
-    all_change: number
-  },
-  maxCpuProc: { 
-    name: string,
-    cpu: number,
-    mem: number
-  }|{},
-  maxMemProc: {
-    name: string,
-    cpu: number,
-    mem: number
-  }|{},
-  agentProc: {
-    name: string,
-    cpu: number,
-    mem: number
-  }|{},
-  disk: {
-    rx_sec?: number,
-    wx_sec?: number,
-    tx_sec?: number,
-    rIO_sec?: number,
-    wIO_sec?: number,
-    tIO_sec?: number,
-    added_devices_count: number,
-    removed_devices_count: number,
-    added_devices: string[],
-    removed_devices: string[]
-  },
-  net: {
-    totoal_interfaces: number,
-    total_change: number,
-    up_interfaces: number,
-    up_change: number,
-    active_interfaces: number,
-    rx_dropped: number,
-    rx_errors: number,
-    tx_dropped: number,
-    tx_errors: number,
-    rx_sec: number,
-    tx_sec: number,
-  }|{},
-  timespan_sec: number,
-  checkAt: number
-  host: string
-}
 
 let lastNetwork: any = null
 let lastBlockDevices: {[key:string]:any}|null = null
@@ -85,7 +14,7 @@ let lastSwapSize: number = -1
 let lastProcCount: number = -1
 let lastTimestamp: number = -1
 
-export const getCurrentLoad = async (hostId: string): Promise<SystemLoad|null> => {
+export const getCurrentLoad = async (hostname: string, account: string, type: Sardines.Runtime.ResourceType = Sardines.Runtime.ResourceType.host): Promise<SystemLoad|null> => {
   // const now = Date.now()
   // CPU load
   const {currentload, currentload_user, currentload_system, currentload_idle, currentload_irq, cpus} =  await si.currentLoad()
@@ -200,7 +129,7 @@ export const getCurrentLoad = async (hostId: string): Promise<SystemLoad|null> =
     cpu: {
       count: cpuCnt,
       load: Math.round(currentload*10)/10,
-      user: Math.round(currentload_user*10)/10,
+      usr: Math.round(currentload_user*10)/10,
       sys: Math.round(currentload_system*10)/10,
       idle: Math.round(currentload_idle*10)/10,
       irq: Math.round(currentload_irq*10)/10,
@@ -218,7 +147,7 @@ export const getCurrentLoad = async (hostId: string): Promise<SystemLoad|null> =
       swap_change: lastSwapSize < 0 ? 0 : Math.round(swaptotal/1024/1024) - lastSwapSize
     }, 
     proc: {
-      all, running, blocked, sleeping,
+      all_processes: all, running, blocked, sleeping,
       all_change: lastProcCount < 0 ? 0 : all - lastProcCount
     },
     maxCpuProc,
@@ -228,25 +157,23 @@ export const getCurrentLoad = async (hostId: string): Promise<SystemLoad|null> =
     net,
     timespan_sec: lastTimestamp < 0 ? 0 : Math.round((now - lastTimestamp)/100)/10,
     checkAt: now,
-    host: hostId
+    name: hostname,
+    account,
+    type
   }
   lastCpuCount = perf.cpu.count
   lastMemSize = perf.mem.total
   lastSwapSize = perf.mem.swaptotal
-  lastProcCount = perf.proc.all
+  lastProcCount = perf.proc.all_processes
   // Done
-  if (lastTimestamp < 0) {
-    lastTimestamp = now
-    return null
-  }
   lastTimestamp = now
   return perf
 }
 
 if (proc.argv[proc.argv.length - 1] === 'test') {
-  getCurrentLoad('localhost').then(() => {
+  getCurrentLoad('localhost', 'unknown').then(() => {
     setTimeout(()=>{
-      getCurrentLoad('localhost').then(perf => {
+      getCurrentLoad('localhost', 'unknown').then(perf => {
         console.log(perf)
       })
     }, 3000)
