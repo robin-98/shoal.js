@@ -169,7 +169,8 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
             tx_sec: 'INT',
         },
         timespan_sec: 'INT',
-        now: 'TIMESTAMP(3)' 
+        checkAt: 'TIMESTAMP(3)',
+        host: 'VARCHAR(200)'
     }
 }
 

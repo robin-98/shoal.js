@@ -2,7 +2,7 @@
     "providers": [{
         "code": {
             "name": "sardines-service-provider-http",
-            "locationType": "npm_link"
+            "locationType": "npm"
         },
         "providerSettings": {
             "host": "0.0.0.0",
@@ -21,7 +21,7 @@
             "syslog": true,
             "public": {
                 "protocol": "http",
-                "host": "127.0.0.1",
+                "host": "172.16.124.1",
                 "root": "/",
                 "port": 8080,
                 "driver": "sardines-service-driver-http"

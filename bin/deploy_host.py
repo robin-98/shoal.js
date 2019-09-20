@@ -38,7 +38,7 @@ try:
   elif args.providers == 'sardines-service-provider-http' and providerSettings is None:
     providerSettings = [{
       "host": "0.0.0.0",
-      "port": 8080,
+      "port": 8081,
       "protocol": "http",
       "root": "/",
       "bodyParser": {
@@ -55,7 +55,7 @@ try:
           "protocol": "http",
           "host": target_addr,
           "root": "/",
-          "port": 8080,
+          "port": 8081,
           "driver": "sardines-service-driver-http"
       }
     }]
@@ -109,6 +109,7 @@ def scp(filepath, remote_file_path):
     sys.exit(cmd_exit_code)
 
 # Copy node binary to the remote host (Linux)
+# ssh_exec("ps -ef|grep node|grep -v grep|awk '{print $2}'|xargs kill -9")
 ssh_exec('rm -rf node*')
 scp(node_bin, 'node.tar.xz')
 ssh_exec('tar -xf node.tar.xz && rm -f node.tar.xz && if [ ! -d node ];then mv node* node; fi')
@@ -120,6 +121,9 @@ ssh_exec('rm -rf ' + remote_work_dir + ' && mkdir -p ' + remote_work_dir)
 for f in ['src', 'package.json', 'conf']:
   scp(args.shoal_pkg + '/' + f, remote_work_dir + '/' + f)
 
+# Stop agent and services if exist
+ssh_exec('npm run stop', work_dir=remote_work_dir, env='node')
+
 # Build sardines.shoal on remote host
 ssh_exec('npm i && npm run build', work_dir=remote_work_dir, env='node')
 
@@ -129,13 +133,16 @@ agent_deploy_plan = {
   "applications": [{
     "name": "sardines",
     "code": {
-        "locationType": "file",
-        "location": "./lib/agent"
+      "locationType": "file",
+      "location": "./lib"
     },
     "version": "*",
     "init": [{
-        "service": "/setupRepoEntries",
-        "arguments": []
+      "service": "/agent/setupRepositoryEntries",
+      "arguments": []
+    }, {
+      "service": "/agent/startHostStat",
+      "arguments": [target_addr, 60000]
     }]
   }]
 }
@@ -152,24 +159,34 @@ try:
       "providerSettings": settings
     })
 
-  repoProviders = []
+  shoalUser = None
+  for app in repoDeployPlan['applications']:
+    if 'name' in app and app['name'] == 'sardines' and 'init' in app:
+      for item in app['init']:
+        if 'service' in item and item['service'] == '/repository/setup':
+          shoalUser = item['arguments'][0]['shoalUser']
+
+  repoEntries = []
   for provider in repoDeployPlan['providers']:
     settings = provider['providerSettings']
     publicInfo = settings['public']
-    repoProviders.append(publicInfo)
+    repoEntries.append({
+      "providerInfo": publicInfo,
+      "user": shoalUser['name'],
+      "password": shoalUser['password']
+    })
 
-  agent_deploy_plan['init'][0]['arguments'].append({
-    'repoProviders': repoProviders
-  })
+  agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(repoEntries)
 
   agentDeployPlanFile = args.shoal_pkg + '/' + 'deploy-agent.json'
   with open(agentDeployPlanFile,'w') as f:
     json.dump(agent_deploy_plan, f, indent = 4)
     f.close()
-  scp(agentDeployPlanFile, 'deploy-agent.json')
+  scp(agentDeployPlanFile, remote_work_dir + '/deploy-agent.json')
 except Exception as e:
   print('Error while generating deploy plan for the agent services')
+  print(e)
   sys.exit(1)
 
 # Start sardines.shoal.agent service
-
+ssh_exec('nohup npm run startAgent > agent.log 2>1 &', work_dir=remote_work_dir, env='node')

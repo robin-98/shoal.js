@@ -9,7 +9,9 @@
 import { RepositorySettings } from './repo_static'
 export { RepositorySettings } from './repo_static'
 
-import { RepositoryLifeCycle, ResourceType } from './repo_life_cycle'
+import { RepositoryRuntime } from './repo_runtime'
+
+import { ResourceType } from './repo_deploy'
 
 import {
     Account,
@@ -21,13 +23,13 @@ import {
 import { utils } from 'sardines-core'
 let { unifyAsyncHandler, unifyErrMesg } = utils
 
-let repoInst: RepositoryLifeCycle|null = null
+let repoInst: RepositoryRuntime|null = null
 
 const errRepoNotSetupYet = unifyErrMesg('Repository is not setup yet', 'repository', 'setup')
 
 export const setup = async (settings: RepositorySettings) => {
     if (repoInst) return
-    if (!repoInst) repoInst = new RepositoryLifeCycle()
+    if (!repoInst) repoInst = new RepositoryRuntime()
     return await repoInst.setup(settings)
 }
 
@@ -106,4 +108,10 @@ export const deployHost = async (data: any, token: string) => {
     data.type = ResourceType.host
     if (!repoInst) return null
     return await unifyAsyncHandler('repository', 'fetch service runtime', repoInst.deployResource, repoInst)(data, token)
+}
+
+export const hostHeartbeat = async(data: any, token: string) => {
+    console.log('heartbeat:', data)
+    console.log('token:', token)
+    console.log('')
 }

@@ -13,23 +13,26 @@ import * as path from 'path'
 import * as proc from 'process'
 import * as fs from 'fs'
 
-export const startRepository = async (repositoryServices: any) => {
-    if (!repositoryServices) {
-        throw utils.unifyErrMesg('repository services are not correctly compiled', 'shoal', 'repository')
+const serviceDefinitionFile = proc.argv[proc.argv.length - 2]
+const serviceDeployPlanFile = proc.argv[proc.argv.length - 1]
+
+export const startTargetServices = async (targetServices: any) => {
+    if (!targetServices) {
+        throw utils.unifyErrMesg('services are not correctly compiled', 'shoal', 'start')
     }
-    const res = await serviceDeployer.deploy(path.resolve(proc.cwd(), './deploy-repository-dev.json'), [repositoryServices], true)
+    const res = await serviceDeployer.deploy(path.resolve(proc.cwd(), serviceDeployPlanFile), [targetServices], true)
     // console.log('deploy result:', utils.inspect(res))
     return res
 }
 
-const repoServiceFile = path.resolve(proc.cwd(), './repository.json')
-if (fs.existsSync(repoServiceFile)) {
-    const repoServices = JSON.parse(fs.readFileSync(repoServiceFile).toString())
-    startRepository(repoServices).then(res => {
-        if (res) console.log('repository as been started')
+const serviceFilePath = path.resolve(proc.cwd(), serviceDefinitionFile)
+if (fs.existsSync(serviceFilePath)) {
+    const targetServices = JSON.parse(fs.readFileSync(serviceFilePath).toString())
+    startTargetServices(targetServices).then(res => {
+        if (res) console.log(`services in ${serviceDefinitionFile} have been started`)
         else throw 'deploy failed'
     })
     .catch(e => {
-        console.log('ERROR when starting repository:', e)
+        console.log(`ERROR when deploying services in ${serviceDefinitionFile}:`, e)
     })
 }

@@ -73,7 +73,8 @@ export interface SystemLoad {
     tx_sec: number,
   }|{},
   timespan_sec: number,
-  now: number
+  checkAt: number
+  host: string
 }
 
 let lastNetwork: any = null
@@ -84,7 +85,7 @@ let lastSwapSize: number = -1
 let lastProcCount: number = -1
 let lastTimestamp: number = -1
 
-export const getCurrentLoad = async (): Promise<SystemLoad|null> => {
+export const getCurrentLoad = async (hostId: string): Promise<SystemLoad|null> => {
   // const now = Date.now()
   // CPU load
   const {currentload, currentload_user, currentload_system, currentload_idle, currentload_irq, cpus} =  await si.currentLoad()
@@ -226,7 +227,8 @@ export const getCurrentLoad = async (): Promise<SystemLoad|null> => {
     disk,
     net,
     timespan_sec: lastTimestamp < 0 ? 0 : Math.round((now - lastTimestamp)/100)/10,
-    now
+    checkAt: now,
+    host: hostId
   }
   lastCpuCount = perf.cpu.count
   lastMemSize = perf.mem.total
@@ -242,9 +244,9 @@ export const getCurrentLoad = async (): Promise<SystemLoad|null> => {
 }
 
 if (proc.argv[proc.argv.length - 1] === 'test') {
-  getCurrentLoad().then(() => {
+  getCurrentLoad('localhost').then(() => {
     setTimeout(()=>{
-      getCurrentLoad().then(perf => {
+      getCurrentLoad('localhost').then(perf => {
         console.log(perf)
       })
     }, 3000)

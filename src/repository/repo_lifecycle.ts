@@ -1,7 +1,7 @@
-import { RepositoryRuntime } from './repo_runtime'
-export * from './repo_runtime'
+import { RepositoryStatic } from './repo_static'
+export * from './repo_static'
 
-export class RepositoryLifeCycle extends RepositoryRuntime {
+export class RepositoryLifeCycle extends RepositoryStatic {
   private intervalHeartbeat: any = null
   private heartbeatTimespan: number = 600 * 1000
   constructor() {

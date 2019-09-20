@@ -17,6 +17,8 @@
         "sardines-built-in-services": "*",
         "sardines-compile-time-tools": "*",
         "sardines-core": "*",
+        "sardines-service-driver-http": "^0.1.7",
+        "sardines-service-provider-http": "^0.2.2",
         "semver": "^6.3.0",
         "systeminformation": "^4.14.4",
         "typescript": "^3.5.3"
@@ -25,8 +27,9 @@
     "devDependencies": {},
     "homepage": "https://github.com/robin-98/sardines.shoal.http.js#readme",
     "keywords": [
-        "Free-to-Decompose",
+        "Free-to-Decouple",
         "distributed",
+        "cloud",
         "framework",
         "FaaS"
     ],
@@ -38,17 +41,20 @@
         "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
     },
     "scripts": {
-        "build": "npm run compileRepo && npm run reverseCompile && npm run publishRepositoryInterfaces && npm run clear && tsc --build conf/tsconfig.json && npm run makeExec",
+        "build": "npm run compileRepo && npm run compileAgent && npm run reverseCompile && npm run publishRepositoryInterfaces && npm run clear && tsc --build conf/tsconfig.json && npm run makeExec",
         "clear": "rm -rf lib/*",
         "compileRepo": "file=repository.json; rm -f $file && sardines-compiler --application=sardines --recompile --verbose --gen-services=$file ./src/repository/index.ts",
+        "compileAgent": "file=agent.json; rm -f $file && sardines-compiler --application=sardines --recompile --verbose --gen-services=$file ./src/agent/index.ts",
         "makeExec": "npm run makeExecRepo && npm run makeExecManRepo",
         "makeExecManRepo": "file=lib/manager/manageRepository.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "makeExecRepo": "file=lib/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "reverseCompile": "sardines-compiler --reverse ./src",
         "publishRepositoryInterfaces": "file=./bin/publish_repository_service_definitions_to_core_project.py; if [ -f $file ];then $file repository.json ../sardines.core.js/src/repository_services.ts; fi",
-        "start": "npm run build && node lib/index.js",
+        "startRepo": "npm run build && node lib/index.js ./repository.json ./deploy-repository-dev.json",
+        "startAgent": "npm run build && node lib/index.js ./agent.json ./deploy-agent.json",
         "test": "npm run build && node lib/agent/host_perf.js test",
-        "testDeployHost": "./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json"
+        "testDeployHost": "./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json",
+        "stop": "if [ `ps -ef|grep node|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then echo 'haha'; ps -ef|grep node|grep -v grep; ps -ef|grep node|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; fi"
     },
     "type": "lib/index.d.ts",
     "version": "0.1.4"

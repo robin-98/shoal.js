@@ -1,0 +1,36 @@
+{
+    "services": [
+        {
+            "name": "setupRepositoryEntries",
+            "module": "/agent",
+            "arguments": [
+                {
+                    "name": "entries",
+                    "type": "any[]"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": false,
+            "filepath": "/agent/index.ts"
+        },
+        {
+            "name": "startHostStat",
+            "module": "/agent",
+            "arguments": [
+                {
+                    "name": "hostId",
+                    "type": "string"
+                },
+                {
+                    "name": "heartbeatInterval",
+                    "type": "number",
+                    "default": "1000"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/agent/index.ts"
+        }
+    ],
+    "application": "sardines"
+}
