@@ -40,24 +40,6 @@
             "version": "*",
             "init": [
                 {
-                    "service": "/agent/setupRepositoryEntries",
-                    "arguments": [
-                        [
-                            {
-                                "providerInfo": {
-                                    "protocol": "http",
-                                    "host": "172.16.124.1",
-                                    "root": "/",
-                                    "port": 8080,
-                                    "driver": "sardines-service-driver-http"
-                                },
-                                "user": "sardines-shoal",
-                                "password": "Sardines@2019"
-                            }
-                        ]
-                    ]
-                },
-                {
                     "service": "/agent/startHost",
                     "arguments": [
                         {

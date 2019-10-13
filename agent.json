@@ -1,19 +1,6 @@
 {
     "services": [
         {
-            "name": "setupRepositoryEntries",
-            "module": "/agent",
-            "arguments": [
-                {
-                    "name": "entries",
-                    "type": "any[]"
-                }
-            ],
-            "returnType": "any",
-            "isAsync": false,
-            "filepath": "/agent/index.ts"
-        },
-        {
             "name": "startHost",
             "module": "/agent",
             "arguments": [

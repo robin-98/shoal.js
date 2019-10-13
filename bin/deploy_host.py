@@ -3,6 +3,7 @@ import sys
 import os
 import argparse
 import json
+from lib.read_entries_from_repository_deploy_plan import readEntriesAndDriversFromRepoDeployPlan
 
 cwd = os.getcwd()
 argParser = argparse.ArgumentParser(description='Deploy the sardines shoal agent on a remote host via ssh')
@@ -61,16 +62,6 @@ try:
     }]
 except Exception as e:
   print('Error while parsing providers and drivers and their settings')
-  print(e)
-  sys.exit(1)
-
-# parse repo deploy plan
-try:
-  with open(args.repo_deploy_file) as f:
-    repoDeployPlan = json.load(f)
-    f.close()
-except Exception as e:
-  print('Error while parsing repository deploy plan')
   print(e)
   sys.exit(1)
 
@@ -138,9 +129,6 @@ agent_deploy_plan = {
     },
     "version": "*",
     "init": [{
-      "service": "/agent/setupRepositoryEntries",
-      "arguments": []
-    }, {
       "service": "/agent/startHost",
       "arguments": []
     }]
@@ -159,26 +147,6 @@ for i in range(0, len(providers)):
     "providerSettings": settings
   })
 
-# prepare repository entries for init service '/agent/setupRepositoryEntries'
-shoalUser = None
-for app in repoDeployPlan['applications']:
-  if 'name' in app and app['name'] == 'sardines' and 'init' in app:
-    for item in app['init']:
-      if 'service' in item and item['service'] == '/repository/setup':
-        shoalUser = item['arguments'][0]['shoalUser']
-
-repoEntries = []
-for provider in repoDeployPlan['providers']:
-  settings = provider['providerSettings']
-  publicInfo = settings['public']
-  repoEntries.append({
-    "providerInfo": publicInfo,
-    "user": shoalUser['name'],
-    "password": shoalUser['password']
-  })
-
-agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(repoEntries)
-
 # Prepare host info
 host_info = {
   "name": target_addr,
@@ -196,8 +164,8 @@ if args.ssh_port is not None:
   host_info["address"]["ssh_port"] = args.ssh_port
 
 # set host info as parameter for init service '/agent/startHost'
-agent_deploy_plan['applications'][0]['init'][1]['arguments'].append(host_info)
-agent_deploy_plan['applications'][0]['init'][1]['arguments'].append(60000)
+agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(host_info)
+agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(60000)
 
 # generate deploy plan file for agent services
 try:
@@ -211,7 +179,31 @@ except Exception as e:
   print(e)
   sys.exit(1)
 
+# prepare repository entries and drivers for init service '/agent/setupRepositoryEntries'
+(repoEntries, drivers) = readEntriesAndDriversFromRepoDeployPlan(args.repo_deploy_file)
+
+# generate sardines-config.json for agent services
+config = {
+  "application": "sardines",
+  "platform": "nodejs",
+  "srcRootDir": "./src",
+  "sardinesDir": "sardines",
+  "repositoryEntries": repoEntries,
+  "drivers": drivers
+}
+
+try:
+  with open('./sardines-config.json', 'w') as f:
+    json.dump(config, f, indent=4)
+    f.close()
+  scp('./sardines-config.json', remote_work_dir + '/sardines-config.json')
+  os.remove('./sardines-config.json')
+except Exception as e:
+  print('Error while writing sardines-config.json', e)
+  sys.exit(1)
+
 # Start sardines.shoal.agent service
-ssh_exec('nohup npm run startAgent > agent.log 2>1 &', work_dir=remote_work_dir, env='node')
+ssh_exec('sardines-init', work_dir=remote_work_dir, env='node')
+ssh_exec('nohup npm run startAgent > agent.log 2>&1 &', work_dir=remote_work_dir, env='node')
 
 

@@ -16,12 +16,19 @@ import * as fs from 'fs'
 const serviceDefinitionFile = proc.argv[proc.argv.length - 2]
 const serviceDeployPlanFile = proc.argv[proc.argv.length - 1]
 
+import { RepositoryClient } from 'sardines-core'
+const sardinesConfigFilepath = path.resolve(proc.cwd(), './sardines-config.json')
+if (fs.existsSync(sardinesConfigFilepath)) {
+    console.log('loading sardines config:', sardinesConfigFilepath)
+    const sardinesConfig = require(sardinesConfigFilepath)
+    RepositoryClient.setupRepositoryEntriesBySardinesConfig(sardinesConfig, true)
+}
+
 export const startTargetServices = async (targetServices: any) => {
     if (!targetServices) {
         throw utils.unifyErrMesg('services are not correctly compiled', 'shoal', 'start')
     }
     const res = await serviceDeployer.deploy(path.resolve(proc.cwd(), serviceDeployPlanFile), [targetServices], true)
-    // console.log('deploy result:', utils.inspect(res))
     return res
 }
 

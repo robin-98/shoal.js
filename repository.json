@@ -235,23 +235,6 @@
             "filepath": "/repository/index.ts"
         },
         {
-            "name": "deployHost",
-            "module": "/repository",
-            "arguments": [
-                {
-                    "name": "data",
-                    "type": "any"
-                },
-                {
-                    "name": "token",
-                    "type": "string"
-                }
-            ],
-            "returnType": "any",
-            "isAsync": true,
-            "filepath": "/repository/index.ts"
-        },
-        {
             "name": "resourceHeartbeat",
             "module": "/repository",
             "arguments": [
@@ -270,6 +253,23 @@
         },
         {
             "name": "updateResourceInfo",
+            "module": "/repository",
+            "arguments": [
+                {
+                    "name": "data",
+                    "type": "any"
+                },
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/repository/index.ts"
+        },
+        {
+            "name": "deployServices",
             "module": "/repository",
             "arguments": [
                 {

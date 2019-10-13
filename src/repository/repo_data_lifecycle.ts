@@ -1,7 +1,6 @@
-import { RepositoryStatic } from './repo_static'
-export * from './repo_static'
+import { RepositoryDataStructure } from './repo_data_structure'
 
-export class RepositoryLifeCycle extends RepositoryStatic {
+export class RepositoryLifeCycle extends RepositoryDataStructure {
   private intervalHeartbeat: any = null
   private heartbeatTimespan: number = 600 * 1000
   constructor() {

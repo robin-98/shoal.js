@@ -2,12 +2,7 @@ import { RepositoryClient, Sardines } from 'sardines-core'
 import { getCurrentLoad } from './host_perf'
 import { SystemLoad } from '../interfaces/system_load'
 
-export const setupRepositoryEntries = (entries: any[]) => {
-  RepositoryClient.setupRepositoryEntries(entries)
-}
-
 export interface Resource extends Sardines.Runtime.Resource { }
-
 
 export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 1000) => {
   // Start heartbeat
@@ -54,11 +49,13 @@ export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 
 
     const tryToUpdateHostInfo = async() => {
       try {
+        console.log('sending host info to repo:', hostInfo)
         const res = await RepositoryClient.exec('updateResourceInfo', hostInfo)
         if (res && res.id) {
           hasHostInfoUpdated = true
           hostId = res.id
         }
+        console.log('response of host info updating:', res)
       } catch(e) {
         console.log('ERROR while trying to update host info:', e)
       }

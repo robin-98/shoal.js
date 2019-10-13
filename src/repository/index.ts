@@ -6,19 +6,19 @@
  * @desc [description]
  */
 
-import { RepositorySettings } from './repo_static'
-export { RepositorySettings } from './repo_static'
+import { RepositorySettings } from './repo_data_structure'
+export { RepositorySettings } from './repo_data_structure'
 
-import { RepositoryRuntime as Repository } from './repo_runtime'
+import { RepositoryRacing as Repository } from './repo_racing'
 
 import {
     Account,
     Service,
     Application,
     Source
-} from './repo_static'
+} from './repo_data_structure'
 
-import { utils, Sardines } from 'sardines-core'
+import { utils } from 'sardines-core'
 let { unifyAsyncHandler, unifyErrMesg } = utils
 
 let repoInst: Repository|null = null
@@ -101,12 +101,12 @@ export const fetchServiceRuntime = async (serviceIdentity: any, token: string) =
     return await unifyAsyncHandler('repository', 'fetch service runtime', repoInst.fetchServiceRuntime, repoInst)(serviceIdentity, token)
 }
 
-export const deployHost = async (data: any, token: string) => {
-    if (!data) return null
-    data.type = Sardines.Runtime.ResourceType.host
-    if (!repoInst) return null
-    return await unifyAsyncHandler('repository', 'fetch service runtime', repoInst.deployResource, repoInst)(data, token)
-}
+// export const deployHost = async (data: any, token: string) => {
+//     if (!data) return null
+//     data.type = Sardines.Runtime.ResourceType.host
+//     if (!repoInst) return null
+//     return await unifyAsyncHandler('repository', 'deploy host', repoInst.deployResource, repoInst)(data, token)
+// }
 
 export const resourceHeartbeat = async(data: any, token: string) => {
     if (!data) return null
@@ -118,4 +118,10 @@ export const updateResourceInfo = async(data: any, token: string) => {
     if (!data) return null
     if (!repoInst) return null
     return await unifyAsyncHandler('repository', 'update resource info', repoInst.createOrUpdateResourceInfo, repoInst)(data, token)
+}
+
+export const deployServices = async(data: any, token: string) => {
+    if (!data) return null
+    if (!repoInst) return null
+    return await unifyAsyncHandler('repository', 'deploy services', repoInst.createOrUpdateRuntimeOfServices, repoInst)(data, token) 
 }

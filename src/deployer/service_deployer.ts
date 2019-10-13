@@ -26,9 +26,17 @@ const getSourceCodeFilePath = (filepath: string): string => {
     }else return filepath
 }
 
-export const deploy = async (filepath: string, serviceDefinitions: any[], verbose: boolean = false) => {
+// filepath: file path of deploy plan
+// serviceDefinitions: array of service definition file content, each for an application or part of an application
+// start or get an instance from factory of the provider
+// Register services on the specified provider
+export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, serviceDefinitions: any[], verbose: boolean = false) => {
 
-    const deployPlan = await parseDeployPlanFile(filepath, verbose)
+    const filepath = (typeof filepathOrDeployPlan === 'string') ? filepathOrDeployPlan : null
+
+    const deployPlan = filepath ? await parseDeployPlanFile(filepath, verbose)
+                       : <Sardines.DeployPlan>filepathOrDeployPlan
+                       
     if (!serviceDefinitions || !Array.isArray(serviceDefinitions) || !deployPlan.applications || !Array.isArray(deployPlan.applications)) {
         console.error(`No service is setup to deploy`)
         return
@@ -201,6 +209,8 @@ export const deploy = async (filepath: string, serviceDefinitions: any[], verbos
     return result
 }
 
+
+// To test the script function from command line
 export const exec = async (serviceDefinitions: any) => {
     if (params['definition-file']) {
         params.definition_file = params['definition-file']

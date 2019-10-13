@@ -15,7 +15,7 @@ import {
     PostgresServerSettings
 } from 'sardines-built-in-services'
 import { utils } from 'sardines-core'
-import * as semver from 'semver'
+// import * as semver from 'semver'
 
 export const extraPostgresDBStruct: PostgresDatabaseStructure = {
     account: {
@@ -239,7 +239,7 @@ export interface Source {
 }
 
 
-export class RepositoryStatic extends PostgresTempleteAccount {
+export class RepositoryDataStructure extends PostgresTempleteAccount {
     protected fs: Storage|null = null
     protected owner: Account|null = null
     protected shoalUser: Account|null = null
@@ -352,7 +352,7 @@ export class RepositoryStatic extends PostgresTempleteAccount {
         if (service.name) serviceQuery.name = service.name
         if (service.version) serviceQuery.version = service.version
 
-        let serviceInst: Service|null = await this.queryService(serviceQuery, token)
+        let serviceInst: Service|null = <Service|null>await this.queryService(serviceQuery, token)
         if (serviceInst) {
             let appIdentity: Application|null = null
             if (serviceInst.application_id) appIdentity = {id: serviceInst.application_id}
@@ -408,57 +408,90 @@ export class RepositoryStatic extends PostgresTempleteAccount {
         }
     }
 
-    async queryService(service: Service, token: string, bypassToken: boolean = false): Promise<Service|null> {
+    async queryService(service: Service, token: string, bypassToken: boolean = false): Promise<Service|Service[]|null> {
         if (!bypassToken) await this.validateToken(token, true)
 
-        let version = service.version
+        // Compose general query for the application
+        let serviceQuery = Object.assign({}, service)
+        let version = serviceQuery.version
         if (!version || version === '*' || version.toLowerCase() === 'latest') {
             version = '*'
-            delete service.version
+            delete serviceQuery.version
         }
-        let appName = service.application
-        if (appName) delete service.application
-        if (!service.application_id) {
+        let appName = serviceQuery.application
+        if (appName) delete serviceQuery.application
+        if (!serviceQuery.application_id) {
             let appInst = await this.db!.get('application', {name: appName}, {create_on: -1}, 1)
             if (appInst) {
                 appName = appInst.name
-                service.application_id = appInst.id
+                serviceQuery.application_id = appInst.id
             } else {
                 throw utils.unifyErrMesg('The application which the service claimed belonging to does not exist', 'repository', 'service')
             }
         }
-        let serviceInst = await this.db!.get('service', service)
-        if (serviceInst && Array.isArray(serviceInst) && version === '*') {
-            let latest = serviceInst[0]
-            for (let serv of serviceInst) {
-                if (serv.is_public && semver.gt(serv.version, latest.version)) {
-                    latest = serv
+        if (serviceQuery.name === '*') {
+            delete serviceQuery.name
+        }
+        if (serviceQuery.module === '*') {
+            delete serviceQuery.module
+        }
+
+        // to query entire module
+        let queryResult: any = null
+        if (serviceQuery.version) {
+            queryResult = await this.db!.get('service', serviceQuery)
+        } else if (serviceQuery.name && serviceQuery.module) {
+            let orderby = { create_on: -1 }
+            queryResult = await this.db!.get('service', serviceQuery, orderby, 1)
+        } else {
+            let distinctServiceNames = await this.db!.get('service', serviceQuery, null, 0, 0, ['module', 'name'])
+            if (distinctServiceNames) {
+                queryResult = []
+                if (distinctServiceNames && !Array.isArray(distinctServiceNames)) {
+                    distinctServiceNames = [distinctServiceNames]
+                }
+                for (let i=0; i<distinctServiceNames.length; i++) {
+                    const tmpService = distinctServiceNames[i]
+                    let orderby = { create_on: -1 }
+                    let tmpServiceQuery = Object.assign(tmpService, serviceQuery)
+                    let serviceInst = await this.db!.get('service', tmpServiceQuery, orderby, 1)
+                    if (serviceInst) {
+                        queryResult.push(serviceInst)
+                    }
+                }
+                if (queryResult.length === 0) return null
+            }   
+        }
+        if (!queryResult) return null
+
+        // clear useless keys
+        if (!Array.isArray(queryResult)) {
+            queryResult = [queryResult]
+        }
+        for(let serviceInst of queryResult) {
+            if (serviceInst && serviceInst.is_public) {
+                // Fetch foreign keys
+                serviceInst.application = appName
+                // delete serviceInst.application_id
+                delete serviceInst.create_on
+                delete serviceInst.last_access_on
+                delete serviceInst.owner_id
+                delete serviceInst.developers
+                // delete serviceInst.is_public
+                // delete serviceInst.source_id
+                // delete serviceInst.file_path
+                // delete serviceInst.provider_settings
+                // delete serviceInst.init_params
+                // Assemble custom types
+                // Decode arguments
+                // TODO: move the decode algorithm to postgres class
+                if (typeof serviceInst.arguments === 'string') {
+                    serviceInst.arguments = serviceInst.arguments.match(/([a-z|A-Z|,]{2,})/g)
                 }
             }
-            serviceInst = latest
         }
-        if (serviceInst && serviceInst.is_public) {
-            // Fetch foreign keys
-            serviceInst.application = appName
-            delete serviceInst.application_id
-            delete serviceInst.create_on
-            delete serviceInst.last_access_on
-            delete serviceInst.owner_id
-            delete serviceInst.developers
-            delete serviceInst.is_public
-            delete serviceInst.source_id
-            delete serviceInst.file_path
-            delete serviceInst.provider_settings
-            delete serviceInst.init_params
-            // Assemble custom types
-            // Decode arguments
-            // TODO: move the decode algorithm to postgres class
-            if (typeof serviceInst.arguments === 'string') {
-                serviceInst.arguments = serviceInst.arguments.match(/([a-z|A-Z|,]{2,})/g)
-            }
-            return serviceInst
-        }
-        return null 
+        if (queryResult && queryResult.length === 1) queryResult = queryResult[0]
+        return queryResult
     }
 
     async deleteService(service: Service, token: string) {

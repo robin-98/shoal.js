@@ -17,7 +17,8 @@
         "sardines-built-in-services": "*",
         "sardines-compile-time-tools": "*",
         "sardines-core": "*",
-        "sardines-service-provider-http": "^0.2.2",
+        "sardines-service-driver-http": "^0.1.8",
+        "sardines-service-provider-http": "^0.2.3",
         "semver": "^6.3.0",
         "systeminformation": "^4.14.4",
         "typescript": "^3.5.3"
@@ -52,9 +53,9 @@
         "startRepo": "npm run build && node lib/index.js ./repository.json ./deploy-repository-dev.json",
         "startAgent": "npm run build && node lib/index.js ./agent.json ./deploy-agent.json",
         "test": "npm run build && node lib/agent/host_perf.js test",
-        "testDeployHost": "./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json",
+        "testDeployHost": "npm run build && ./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json",
         "stop": "if [ `ps -ef|grep node|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep node|grep -v grep; ps -ef|grep node|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; fi"
     },
     "type": "lib/index.d.ts",
-    "version": "0.1.5"
+    "version": "0.1.6"
 }
