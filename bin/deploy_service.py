@@ -10,7 +10,7 @@ argParser = argparse.ArgumentParser(description = 'command-line-tool to deploy s
 argParser.add_argument('--application', type=str, required=True, help='Application name')
 argParser.add_argument('--services', type=str, required=False, help='Services to be deployed, seperate by ",". For each service, use ":" to specify its module:name:version, or in module:name format; For entire module, can use module:* or module:*:<version number>')
 argParser.add_argument('--version', type=str, required=False, default='*', help='Target version')
-argParser.add_argument('--hosts', type=str, required=False, help='Target host name or list of hosts, seperated by ",". If omitted then automatically select one')
+argParser.add_argument('--hosts', type=str, required=False, help='Target host name or list of hosts, seperated by ",", format as "<user name>@<host name>". If omitted then automatically select one')
 argParser.add_argument('--repo-deploy-plan', type=str, required=True, help='Deploy plan file path for repository')
 
 args = argParser.parse_args()

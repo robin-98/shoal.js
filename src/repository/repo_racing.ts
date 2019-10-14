@@ -6,14 +6,14 @@
  * @desc [description]
  */
 
-import { RepositoryRuntime } from './repo_runtime'
+import { RepositoryHealthy } from './repo_healthy'
 import { Sardines, utils } from 'sardines-core'
 import { Service } from './repo_data_structure'
 
 export const retryLimit = 3
 export const jobTimeoutLimitInSeconds = 300
 
-export class RepositoryRacing extends RepositoryRuntime {
+export class RepositoryRacing extends RepositoryHealthy {
   constructor() {
     super()
   }

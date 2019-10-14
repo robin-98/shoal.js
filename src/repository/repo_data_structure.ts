@@ -75,7 +75,9 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         entry_type: 'VARCHAR(20)',
         expire_in_seconds: 'INT',
         provider_info: 'JSONB',
-        resource_id: 'UUID NOT NULL'
+        resource_id: 'UUID NOT NULL',
+        last_active_on: 'TIMESTAMP(3)',
+        threads: 'SMALLINT DEFAULT 1'
     },
     resource: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
@@ -98,6 +100,7 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         running_services: 'INT DEFAULT 0',
         cpu_cores: 'SMALLINT',
         mem_megabytes: 'INT',
+        last_active_on: 'TIMESTAMP(3)',
         UNIQUE: ['type', 'name', 'account']
     },
     resource_performance: {
@@ -232,9 +235,9 @@ export enum SourceType {
 
 export interface Source {
     id?: string
-    type: string
-    URL: string
-    root: string
+    type?: string
+    url?: string
+    root?: string
     last_access_on?: any
 }
 
@@ -487,6 +490,11 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
                 // TODO: move the decode algorithm to postgres class
                 if (typeof serviceInst.arguments === 'string') {
                     serviceInst.arguments = serviceInst.arguments.match(/([a-z|A-Z|,]{2,})/g)
+                    for (let i = serviceInst.arguments.length - 1; i>=0; i--) {
+                        const argStr = serviceInst.arguments[i]
+                        const pair = argStr.split(',')
+                        serviceInst[i] = { name: pair[0], type: pair[1] }
+                    }
                 }
             }
         }
@@ -512,8 +520,8 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
         else return sourceInst
     }
 
-    async querySource(source: Source, token: string): Promise<Source|null> {
-        await this.validateToken(token, true)
+    async querySource(source: Source, token: string, bypassToken: boolean = false): Promise<Source|null> {
+        if (!bypassToken) await this.validateToken(token, true)
         return await this.db!.get('source', source)
     }
 

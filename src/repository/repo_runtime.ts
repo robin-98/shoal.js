@@ -45,14 +45,13 @@ export class RepositoryRuntime extends RepositoryDeployment {
     if (resourcePerf) {
       if (sysload.resource_id) {
         const workload = calcWorkload(sysload)
-        await this.db!.set('resource', {workload_percentage: workload}, {id: sysload.resource_id})
-        await this.db!.set('service_runtime', {workload_percentage: workload}, {resource_id: sysload.resource_id})
+        await this.db!.set('resource', {workload_percentage: workload, last_active_on: Date.now()}, {id: sysload.resource_id})
+        await this.db!.set('service_runtime', {workload_percentage: workload, last_active_on: Date.now()}, {resource_id: sysload.resource_id})
       }
       return 'OK'
     }
     return null
   }
-
 
   protected async findAvailableRuntime(type:Sardines.Runtime.RuntimeTargetType, target: Service|Sardines.Runtime.Resource, strategy: Sardines.Runtime.LoadBalancingStrategy = this.defaultLoadBalancingStrategy) {
     let { runtimeObj, table } = this.getRuntimeQueryObj(type, target)
