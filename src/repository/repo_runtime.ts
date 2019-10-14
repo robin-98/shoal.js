@@ -45,8 +45,13 @@ export class RepositoryRuntime extends RepositoryDeployment {
     if (resourcePerf) {
       if (sysload.resource_id) {
         const workload = calcWorkload(sysload)
-        await this.db!.set('resource', {workload_percentage: workload, last_active_on: Date.now()}, {id: sysload.resource_id})
-        await this.db!.set('service_runtime', {workload_percentage: workload, last_active_on: Date.now()}, {resource_id: sysload.resource_id})
+        const newStatus = {
+          workload_percentage: workload,
+          status: Sardines.Runtime.RuntimeStatus.ready,
+          last_active_on: Date.now()
+        }
+        await this.db!.set('resource', newStatus, {id: sysload.resource_id})
+        await this.db!.set('service_runtime', newStatus, {resource_id: sysload.resource_id})
       }
       return 'OK'
     }

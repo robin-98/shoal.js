@@ -69,7 +69,7 @@ except Exception as e:
 os_user = args.os_user
 node_bin = args.node_bin
 
-def ssh_exec(cmd, work_dir = '~', env = None):
+def ssh_exec(cmd, work_dir = '~', env = None, bypassError = False):
   ssh_cmd = 'ssh'
   if args.ssh_port:
     ssh_cmd += ' -p ' + args.ssh_port
@@ -84,7 +84,7 @@ def ssh_exec(cmd, work_dir = '~', env = None):
   ssh_cmd += ' ' + os_user + '@' + target_addr + ' "' + remote_cmd + '"'
   print(ssh_cmd)
   cmd_exit_code = os.system(ssh_cmd)
-  if cmd_exit_code != 0:
+  if cmd_exit_code != 0 and not bypassError:
     print('error when executing ssh command, error code:' + str(cmd_exit_code))
     sys.exit(cmd_exit_code)
 
@@ -99,6 +99,17 @@ def scp(filepath, remote_file_path):
     print('error when copying file to remote host, error code:' + str(cmd_exit_code))
     sys.exit(cmd_exit_code)
 
+# setup remote workspace
+remote_work_dir = 'sardines.shoal'
+ssh_exec('mkdir -p ' + remote_work_dir)
+
+# stop previous watchdog
+cronCmd = 'crontab -l|grep -v '+remote_work_dir+'|awk \\"{if(NF>0)print}\\" > ./tmp_cron.txt '
+cronCmd += '&& if [ -s ./tmp_cron.txt ];then crontab ./tmp_cron.txt; '
+cronCmd += 'else crontab -r; fi'
+cronCmd += '&& rm -f ./tmp_cron.txt'
+ssh_exec(cronCmd, bypassError=True)
+
 # Copy node binary to the remote host (Linux)
 # ssh_exec("ps -ef|grep node|grep -v grep|awk '{print $2}'|xargs kill -9")
 ssh_exec('rm -rf node*')
@@ -106,10 +117,8 @@ scp(node_bin, 'node.tar.xz')
 ssh_exec('tar -xf node.tar.xz && rm -f node.tar.xz && if [ ! -d node ];then mv node* node; fi')
 
 # Copy this sardines.shoal to the remote host
-remote_work_dir = 'sardines.shoal'
-ssh_exec('rm -rf ' + remote_work_dir + ' && mkdir -p ' + remote_work_dir)
 
-for f in ['src', 'package.json', 'conf']:
+for f in ['src', 'package.json', 'conf', 'watchdog.sh']:
   scp(args.shoal_pkg + '/' + f, remote_work_dir + '/' + f)
 
 # Stop agent and services if exist
@@ -204,6 +213,19 @@ except Exception as e:
 
 # Start sardines.shoal.agent service
 ssh_exec('sardines-init', work_dir=remote_work_dir, env='node')
-ssh_exec('nohup npm run startAgent > agent.log 2>&1 &', work_dir=remote_work_dir, env='node')
+ssh_exec('nohup npm run startAgent >> agent.log 2>&1 &', work_dir=remote_work_dir, env='node')
 
+# Setup watchdog
+cmd = 'echo \"WORKSPACE='+ remote_work_dir +'\" > tmp.txt'
+cmd += ' && sed "1d" watchdog.sh >> tmp.txt'
+cmd += ' && mv tmp.txt watchdog.sh'
+ssh_exec(cmd, work_dir=remote_work_dir)
 
+ssh_exec('rm -f ./tmp_cron.txt && crontab -l > ./tmp_cron.txt', bypassError=True)
+
+cmd = '* * * * * sh \$HOME/'+remote_work_dir+'/watchdog.sh > \$HOME/'+remote_work_dir+'/watchdog.log 2>&1'
+cronCmd = 'echo \\"'+cmd+'\\" >> ./tmp_cron.txt'
+cronCmd += ' && crontab ./tmp_cron.txt && rm -f ./tmp_cron.txt'
+ssh_exec(cronCmd)
+
+# END
