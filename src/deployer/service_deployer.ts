@@ -9,6 +9,7 @@ import * as path from 'path'
 import * as proc from 'process'
 
 import { utils, Sardines, Factory } from 'sardines-core'
+import { RepositoryClient } from 'sardines-core'
 import { Source } from 'sardines-compile-time-tools'
 
 import {
@@ -26,11 +27,30 @@ const getSourceCodeFilePath = (filepath: string): string => {
     }else return filepath
 }
 
+const sendDeployResultToRepository = async(deployResult: any, configFilepath: string) => {
+    if (!deployResult || !fs.existsSync(configFilepath)) return
+    // if config file exists it will be used 
+    // to setup repo_client module automatically
+    // in the out most index.ts file
+    // no worry about using repo_client module
+
+    // TODO: use repo_client to send service runtimes to its self
+    let res = await RepositoryClient.exec('updateServiceRuntime', deployResult)
+    console.log('response of updateServiceRuntime:', res)
+
+    // or just invoke repository method from memory
+    // it's also OK to use repository instance from inside
+    // because at this time, the repository instance has been initialized
+    // and database is also ready
+    // but firstly, need to login using shoalUser
+    // it's duplicated process with repo_client, so don't use inside invocation
+}
+
 // filepath: file path of deploy plan
 // serviceDefinitions: array of service definition file content, each for an application or part of an application
 // start or get an instance from factory of the provider
 // Register services on the specified provider
-export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, serviceDefinitions: any[], verbose: boolean = false) => {
+export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, serviceDefinitions: any[], verbose: boolean = false, configFilepath: string = './sardines-config.json') => {
 
     const filepath = (typeof filepathOrDeployPlan === 'string') ? filepathOrDeployPlan : null
 
@@ -213,7 +233,8 @@ export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, s
             }
         }
     }
-    utils.inspectedLog(result)
+    // send 'result' to repository as service runtimes
+    await sendDeployResultToRepository(result, configFilepath)
     return result
 }
 

@@ -115,7 +115,7 @@ export class RepositoryDeployment extends RepositoryHeart {
     else return null
   }
 
-  public async createOrUpdateRuntimeOfServices(targets: ServiceDeploymentTargets, token: string) {
+  public async deployServices(targets: ServiceDeploymentTargets, token: string) {
     await this.validateShoalUser(token)
     console.log('create or update runtime of services:', targets)
     const hosts = targets.hosts

@@ -114,4 +114,10 @@ export class RepositoryRuntime extends RepositoryDeployment {
     }
     return null
   }
+
+  async updateServiceRuntime(serviceRuntime: any, token: string, bypassToken: boolean = false) {
+    if (!bypassToken) await this.validateToken(token, true)
+    console.log('service runtime data:', serviceRuntime)
+    return 'OK'
+  }
 }

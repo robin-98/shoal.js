@@ -101,13 +101,6 @@ export const fetchServiceRuntime = async (serviceIdentity: any, token: string) =
     return await unifyAsyncHandler('repository', 'fetch service runtime', repoInst.fetchServiceRuntime, repoInst)(serviceIdentity, token)
 }
 
-// export const deployHost = async (data: any, token: string) => {
-//     if (!data) return null
-//     data.type = Sardines.Runtime.ResourceType.host
-//     if (!repoInst) return null
-//     return await unifyAsyncHandler('repository', 'deploy host', repoInst.deployResource, repoInst)(data, token)
-// }
-
 export const resourceHeartbeat = async(data: any, token: string) => {
     if (!data) return null
     if (!repoInst) return null
@@ -123,5 +116,11 @@ export const updateResourceInfo = async(data: any, token: string) => {
 export const deployServices = async(data: any, token: string) => {
     if (!data) return null
     if (!repoInst) return null
-    return await unifyAsyncHandler('repository', 'deploy services', repoInst.createOrUpdateRuntimeOfServices, repoInst)(data, token) 
+    return await unifyAsyncHandler('repository', 'deploy services', repoInst.deployServices, repoInst)(data, token) 
+}
+
+export const updateServiceRuntime = async(data: any, token: string) => {
+    if (!data) return null
+    if (!repoInst) return null
+    return await unifyAsyncHandler('repository', 'deploy services', repoInst.updateServiceRuntime, repoInst)(data, token) 
 }

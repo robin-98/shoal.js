@@ -21,6 +21,10 @@ const sardinesConfigFilepath = path.resolve(proc.cwd(), './sardines-config.json'
 if (fs.existsSync(sardinesConfigFilepath)) {
     console.log('loading sardines config:', sardinesConfigFilepath)
     const sardinesConfig = require(sardinesConfigFilepath)
+    if (!sardinesConfig.sardinesDir) {
+        throw `invalid sardines config file, sardinesDir property is missing`
+    }
+    require(`./${sardinesConfig.sardinesDir}`)
     RepositoryClient.setupRepositoryEntriesBySardinesConfig(sardinesConfig, true)
 }
 
