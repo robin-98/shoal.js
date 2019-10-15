@@ -57,5 +57,5 @@
         "stop": "if [ `ps -ef|grep 'node lib/index.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep node|grep -v grep; ps -ef|grep node|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; fi"
     },
     "type": "lib/index.d.ts",
-    "version": "0.1.7"
+    "version": "0.1.8"
 }
