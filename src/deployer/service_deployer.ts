@@ -125,8 +125,8 @@ export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, s
                         name: service.name,
                         version: appVersion
                     },
-                    arguments: service.arguments,
-                    returnType: service.returnType,
+                    // arguments: service.arguments,
+                    // returnType: service.returnType,
                     entries: []
                 }
                 // register handler on all provider instances
@@ -157,24 +157,31 @@ export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, s
                     }
                     // register service on the provider instance
                     try {
-                        await providerInst.registerService(appName, service, handler, additionalServiceSettings)
+                        const tmpService = utils.mergeObjects({}, service)
+                        await providerInst.registerService(appName, tmpService, handler, additionalServiceSettings)
                         if (verbose) {
                             console.log(`service [${serviceId}] has been registered`)
                         }
+                        // after registeration, service data structure will be changed:
+                        // the arguments will have additional properties
+                        // such as 'position' property for http provider
+                        // so the arguments field shall be included in provider entry of service runtime
+
                         const providerDefinition = providerSettingsCache.get(providerName)
                         const providerPublicInfo = providerInst.info || providerDefinition!.providerSettings.public
 
                         const serviceEntry: Sardines.Runtime.ServiceEntry = {
+                            // TODO: proxy type provider info
                             type: (providerPublicInfo) ? Sardines.Runtime.ServiceEntryType.dedicated: Sardines.Runtime.ServiceEntryType.proxy,
                             providerName: providerName
                         }
                         if (providerPublicInfo) {
+                            // TODO: proxy type provider info
                             serviceEntry.providerInfo = providerPublicInfo
                             if (additionalServiceSettings) {
-                                serviceEntry.serviceSettings = additionalServiceSettings
+                                serviceEntry.settingsForProvider = additionalServiceSettings
                             }
                         }
-
                         serviceRuntime.entries.push(serviceEntry)
                     } catch (e) {
                         if (verbose) console.error(`ERROR when registering service [${serviceId}]`, e)
@@ -206,6 +213,7 @@ export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, s
             }
         }
     }
+    utils.inspectedLog(result)
     return result
 }
 

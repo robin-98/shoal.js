@@ -69,15 +69,16 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         deploy_job_ticket: 'VARCHAR(100)',
         status: 'VARCHAR(30)',
+        last_active_on: 'TIMESTAMP(3)',
+        resource_id: 'UUID NOT NULL',
+        threads: 'SMALLINT DEFAULT 1',
+        expire_in_seconds: 'INT DEFAULT 900',
         workload_percentage: 'SMALLINT DEFAULT 100',     // when service is ready, it will update this value by itself to open for serving requests
         service_id: 'UUID NOT NULL',
-        provider_name: 'VARCHAR(100)',
         entry_type: 'VARCHAR(20)',
-        expire_in_seconds: 'INT',
+        provider_name: 'VARCHAR(100)',
         provider_info: 'JSONB',
-        resource_id: 'UUID NOT NULL',
-        last_active_on: 'TIMESTAMP(3)',
-        threads: 'SMALLINT DEFAULT 1'
+        settings_for_provider: 'JSONB'
     },
     resource: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',

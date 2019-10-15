@@ -17,8 +17,8 @@
         "sardines-built-in-services": "*",
         "sardines-compile-time-tools": "*",
         "sardines-core": "*",
-        "sardines-service-driver-http": "^0.1.8",
-        "sardines-service-provider-http": "^0.2.3",
+        "sardines-service-driver-http": "^0.1.9",
+        "sardines-service-provider-http": "*",
         "semver": "^6.3.0",
         "systeminformation": "^4.14.4",
         "typescript": "^3.5.3"
