@@ -24,8 +24,10 @@ if (fs.existsSync(sardinesConfigFilepath)) {
     if (!sardinesConfig.sardinesDir) {
         throw `invalid sardines config file, sardinesDir property is missing`
     }
-    require(`./${sardinesConfig.sardinesDir}`)
-    RepositoryClient.setupRepositoryEntriesBySardinesConfig(sardinesConfig, true)
+    if (fs.existsSync(`./${sardinesConfig.sardinesDir}`)) {
+        require(`./${sardinesConfig.sardinesDir}`)
+        RepositoryClient.setupRepositoryEntriesBySardinesConfig(sardinesConfig, true)
+    }
 }
 
 export const startTargetServices = async (targetServices: any) => {
