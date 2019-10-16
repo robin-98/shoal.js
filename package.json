@@ -56,7 +56,8 @@
         "startAgent": "npm run prepareStart && node lib/deployServices.js ./sardines-services-agent.json ./deploy-agent.json",
         "test": "npm run build && node lib/agent/host_perf.js test",
         "testDeployHost": "npm run build && ./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json",
-        "stop": "if [ `ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'; ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; echo 'sardines stopped'; fi"
+        "stop": "if [ `ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'; ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; echo 'sardines stopped'; fi",
+        "prepublish": "npm run clearPackages && npm run build"
     },
     "type": "lib/deployServices.d.ts",
     "version": "0.1.14"
