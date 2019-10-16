@@ -10,6 +10,7 @@ import { RepositoryDeployment } from './repo_deploy'
 import { SystemLoad } from '../interfaces/system_load'
 import { Sardines } from 'sardines-core'
 import { Service } from './repo_data_structure'
+import { utils } from 'sardines-core'
 
 const calcWorkload = (sysload: SystemLoad):number => {
   let load = 100
@@ -115,9 +116,134 @@ export class RepositoryRuntime extends RepositoryDeployment {
     return null
   }
 
-  async updateServiceRuntime(serviceRuntime: any, token: string, bypassToken: boolean = false) {
+  async updateServiceRuntime(runtimeOfApps: any, token: string, bypassToken: boolean = false) {
     if (!bypassToken) await this.validateToken(token, true)
-    console.log('service runtime data:', serviceRuntime)
+
+    if (!runtimeOfApps) {
+      throw utils.unifyErrMesg('invalid service runtime', 'repository', 'update service runtime')
+    }
+    const cacheApps: {[key: string]: any} = {}
+    for (let app of Object.keys(runtimeOfApps)) {
+      let cacheEntries : {[key: string]: any} = {}
+      cacheApps[app] = cacheEntries
+      let serviceRuntime = runtimeOfApps[app]
+      // query appId
+      let appId = null
+      try {
+        appId = await this.db!.get('application', {name: app})
+        if (!appId) {
+          console.error(`logging runtime for unregistered application ${app} in repository`)
+          if (app !== 'sardines') {
+            throw `Unregistered application [${app}] is not allowed to register service runtime`
+          }
+        }
+      } catch (e) {
+        console.error(`ERROR while querying application id application ${app}`, e)
+        continue
+      }
+      for (let runtime of serviceRuntime) {
+        if (!runtime || !runtime.identity || !runtime.entries || !Array.isArray(runtime.entries)) continue
+        const identity = runtime.identity
+        if (appId) identity.application_id = appId
+        else identity.application = app
+        if (!identity.module || !identity.name || !identity.version) continue
+        if (identity.version === '*') {
+          // query latest version for the service
+          try {
+            const serviceInfo = await this.db!.get('service', identity, {create_on: -1}, 1)
+            if (!serviceInfo && app !== 'sardines') {
+              console.error(`logging runtime for unregistered service ${app}:${identity.module}:${identity.name}`)
+              throw `unregistered service is not allowed to register service runtime`
+            } else if (serviceInfo) {
+              identity.version = serviceInfo.version
+              identity.service_id = serviceInfo.id
+            }
+          } catch (e) {
+            console.error(`ERROR while querying service version for service runtime ${identity.application}:${identity.module}:${identity.name}`,e)
+            continue
+          }
+        }
+        for (let entry of runtime.entries) {
+          if (!entry.providerInfo || !entry.providerInfo.driver || !entry.providerInfo.protocol) continue
+          if (!entry.resource_id && app !== 'sardines') {
+            console.error(`can not log service runtime without resource id for application [${app}]`)
+            continue
+          }
+          const pvdrKey = `${entry.type}|${entry.providerName}|${JSON.stringify(entry.providerInfo)}`
+          if (!cacheEntries[pvdrKey]) cacheEntries[pvdrKey] = {
+            entry: {
+              type: entry.type,
+              providerName: entry.providerName,
+              providerInfo: entry.providerInfo,
+              resource_id: entry.resource_id
+            },
+            services: []
+          }
+          const cache = cacheEntries[pvdrKey]
+          cache.services.push({identity, settingsForProvider: entry.settingsForProvider})
+        }
+      }
+    }
+    for (let app in cacheApps) {
+      for (let runtime in cacheApps[app]) {
+        const entry = cacheApps[app][runtime].entry
+        const services = cacheApps[app][runtime].services
+        for (let service of services) {
+          const identity = service.identity
+          const settingsForProvider = service.settingsForProvider
+          if (!identity.service_id && app !== 'sardines') {
+            // query service
+            try {
+              const serviceInfo = <Service>await this.queryService(identity, token, true)
+              if (serviceInfo) {
+                identity.service_id = serviceInfo.id 
+              }
+            } catch (e) {
+              console.error(`Error while querying service info for service ${app}:${identity.module}:${identity.name}`, e)
+              continue
+            }
+          }
+          // prepare service runtime data in db
+          const runtimeQuery = Object.assign({}, identity, entry)
+          runtimeQuery.settingsForProvider = settingsForProvider
+          // convert properties to db columns
+          for (let prop of [
+            {p:'providerName', db:'provider_name'},
+            {p:'providerInfo', db:'provider_info'},
+            {p:'settingsForProvider', db:'settings_for_provider'},
+            {p:'type', db:'entry_type'}
+          ]) {
+            runtimeQuery[prop.db] = runtimeQuery[prop.p]
+            delete runtimeQuery[prop.p]
+          }
+          // remove undefined properties
+          for (let prop in runtimeQuery) {
+            if (typeof runtimeQuery[prop] === 'undefined') {
+              delete runtimeQuery[prop]
+            }
+          }
+          // save service runtime in db
+          try {
+            const runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
+            const runtimeData = Object.assign({}, runtimeQuery)
+            runtimeData.status = Sardines.Runtime.RuntimeStatus.ready
+            if (runtimeQuery.application === 'sardines') {
+              runtimeData.workload_percentage = 0
+            }
+            if (!runtimeInst) {
+              await this.db!.set('service_runtime', runtimeData)
+              console.log('inserting', runtimeData)
+            } else {
+              await this.db!.set('service_runtime', runtimeData, runtimeQuery)
+              console.log('updating', runtimeData)
+            }
+          } catch(e) {
+            console.error(`Error while saving runtime for service ${app}:${identity.module}:${identity.name}`, e)
+          }
+        }
+      }
+    }
+    // utils.inspectedLog(cacheApps)
     return 'OK'
   }
 }

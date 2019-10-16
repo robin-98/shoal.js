@@ -27,7 +27,7 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
         create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
-        name: 'VARCHAR(30) UNIQUE',
+        name: 'VARCHAR(100) UNIQUE',
         is_public: 'Boolean NOT NULL DEFAULT true',
         owner_id: 'UUID',
         developers: 'UUID[]'
@@ -39,9 +39,10 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         owner_id: 'UUID',
         developers: 'UUID[]',
         is_public: 'Boolean NOT NULL DEFAULT true',
-        application_id: 'UUID',
+        application_id: 'UUID', // can only be null for sardines repository services
+        application: 'VARCHAR(100)',
         module: 'VARCHAR(300)',
-        name: 'VARCHAR(30)',
+        name: 'VARCHAR(100)',
         version: 'VARCHAR(20)',
         source_id: 'UUID',
         arguments: [{
@@ -53,7 +54,7 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         file_path: 'VARCHAR(100)',
         provider_settings: 'JSONB', // Array, enlist all possible provider/driver pairs and provider settings
         init_params: 'JSONB',   // service used init parameters
-        UNIQUE: ['application_id', 'name', 'version']
+        UNIQUE: ['application', 'module', 'name', 'version']
     },
     source: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
@@ -65,16 +66,21 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
     },
     service_runtime: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
+        application_id: 'UUID', // can only be null for sardines repository services
+        application: 'VARCHAR(100)',
+        module: 'VARCHAR(300)',
+        name: 'VARCHAR(100)',
+        version: 'VARCHAR(20)', // can only be '*' for sardines repository services
         create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         deploy_job_ticket: 'VARCHAR(100)',
         status: 'VARCHAR(30)',
         last_active_on: 'TIMESTAMP(3)',
-        resource_id: 'UUID NOT NULL',
+        resource_id: 'UUID',    // can only be null for sardines repository services
         threads: 'SMALLINT DEFAULT 1',
         expire_in_seconds: 'INT DEFAULT 900',
         workload_percentage: 'SMALLINT DEFAULT 100',     // when service is ready, it will update this value by itself to open for serving requests
-        service_id: 'UUID NOT NULL',
+        service_id: 'UUID', // can only be null for sardines repository services
         entry_type: 'VARCHAR(20)',
         provider_name: 'VARCHAR(100)',
         provider_info: 'JSONB',
