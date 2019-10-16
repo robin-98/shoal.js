@@ -58,6 +58,6 @@
         "testDeployHost": "npm run build && ./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json",
         "stop": "if [ `ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'; ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; echo 'sardines stopped'; fi"
     },
-    "type": "lib/index.d.ts",
+    "type": "lib/deployServices.d.ts",
     "version": "0.1.13"
 }
