@@ -16,7 +16,7 @@ export const sardinesConfig = {
     {
       "providerInfo": {
         "protocol": "http",
-        "host": "127.0.0.1",
+        "host": "192.168.1.5",
         "root": "/",
         "port": 8080,
         "driver": "sardines-service-driver-http"

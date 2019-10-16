@@ -1,4 +1,4 @@
-import { RepositoryClient, Sardines } from 'sardines-core'
+import { RepositoryClient, Sardines, utils } from 'sardines-core'
 import { getCurrentLoad } from './host_perf'
 import { SystemLoad } from '../interfaces/system_load'
 
@@ -57,7 +57,7 @@ export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 
         }
         console.log('response of host info updating:', res)
       } catch(e) {
-        console.log('ERROR while trying to update host info:', e)
+        utils.debugLog('ERROR while trying to update host info:', e)
       }
       if (!hasHostInfoUpdated) {
         setTimeout(async() => {

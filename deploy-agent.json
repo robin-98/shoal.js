@@ -7,7 +7,7 @@
             },
             "providerSettings": {
                 "host": "0.0.0.0",
-                "port": 8081,
+                "port": 8080,
                 "protocol": "http",
                 "root": "/",
                 "bodyParser": {
@@ -22,9 +22,9 @@
                 "syslog": true,
                 "public": {
                     "protocol": "http",
-                    "host": "nw-dev01",
+                    "host": "RobindeMacBook-Air.local",
                     "root": "/",
-                    "port": 8081,
+                    "port": 8080,
                     "driver": "sardines-service-driver-http"
                 }
             }
@@ -43,7 +43,7 @@
                     "service": "/agent/startHost",
                     "arguments": [
                         {
-                            "name": "nw-dev01",
+                            "name": "RobindeMacBook-Air.local",
                             "account": "rin",
                             "address": {},
                             "providers": [
@@ -54,7 +54,7 @@
                                     },
                                     "providerSettings": {
                                         "host": "0.0.0.0",
-                                        "port": 8081,
+                                        "port": 8080,
                                         "protocol": "http",
                                         "root": "/",
                                         "bodyParser": {
@@ -69,9 +69,9 @@
                                         "syslog": true,
                                         "public": {
                                             "protocol": "http",
-                                            "host": "nw-dev01",
+                                            "host": "RobindeMacBook-Air.local",
                                             "root": "/",
-                                            "port": 8081,
+                                            "port": 8080,
                                             "driver": "sardines-service-driver-http"
                                         }
                                     }

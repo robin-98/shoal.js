@@ -3,12 +3,13 @@ import sys
 import os
 import argparse
 import json
-from lib.read_entries_from_repository_deploy_plan import readEntriesAndDriversFromRepoDeployPlan
+import getpass
+import socket
 
 cwd = os.getcwd()
 argParser = argparse.ArgumentParser(description='Deploy the sardines shoal agent on a remote host via ssh')
-argParser.add_argument('--host-name', type=str, required=True, help='Remote host name')
-argParser.add_argument('--os-user', type=str, default='sardines', help='OS user on the remote host')
+argParser.add_argument('--host-name', type=str, required=False, default='local', help='Remote host name')
+argParser.add_argument('--os-user', type=str, required=False, help='OS user on the remote host')
 argParser.add_argument('--ipv4', type=str, required=False, help='IPv4 address of the remote host')
 argParser.add_argument('--ssh-port', type=int, required=False, help='SSH port of the remote host')
 argParser.add_argument('--ipv6', type=str, required=False, help='IPv6 address of the remote host')
@@ -17,20 +18,40 @@ argParser.add_argument('--shoal-pkg', type=str, required=False, default=cwd, hel
 argParser.add_argument('--repo-deploy-file', type=str, required=True, help='The sardines repository used to manage the resource')
 argParser.add_argument('--providers', type=str, required=False, default='sardines-service-provider-http', help='Providers for the host to launch services, seperated by ","')
 argParser.add_argument('--provider-settings', type=str, required=False, default='null', help='Provider settings for the providers, in JSON format, must be an array')
+argParser.add_argument('--only-gen-agent-deploy-plan', type=bool, required=False, default=False, help='Only generate deploy plan of agent on target host')
+argParser.add_argument('--agent-deploy-plan-file', type=str, required=False, default='./tmp-deploy-agent.json', help='Agent deploy plan file path')
 
 
 args = argParser.parse_args()
 target_addr = args.host_name
+ipaddr = None
+if target_addr == 'local':
+  target_addr = socket.gethostname()
 if not target_addr:
   target_addr = args.ipv4
 if not target_addr:
   target_addr = args.ipv6
 
-if not target_addr: 
-  print('invalid target host')
-  sys.exit(1)
+if args.ipv4:
+  ipaddr = args.ipv4
+# the following can work but is not stable
+# if not ipaddr and target_addr:
+#   ipaddr = socket.gethostbyname(target_addr)
+#   if ipaddr in ['127.0.0.1']:
+#     ipaddr = None
 
-# Prepare providers info
+if not args.only_gen_agent_deploy_plan:
+  if not target_addr or target_addr in ['localhost', '127.0.0.1', 'local']: 
+    print('invalid target host', target_addr)
+    sys.exit(1)
+elif not target_addr or target_addr == 'local':
+  target_addr = 'localhost'
+
+# prepare repository entries and drivers for init service '/agent/setupRepositoryEntries'
+# from lib.read_entries_from_repository_deploy_plan import readEntriesAndDriversFromRepoDeployPlan
+# (repoEntries, drivers) = readEntriesAndDriversFromRepoDeployPlan(args.repo_deploy_file)
+
+# Prepare providers info for agent deploy plan
 try:
   providers = args.providers.split(',')
   providerSettings = json.loads(args.provider_settings)
@@ -39,7 +60,7 @@ try:
   elif args.providers == 'sardines-service-provider-http' and providerSettings is None:
     providerSettings = [{
       "host": "0.0.0.0",
-      "port": 8081,
+      "port": 8080,
       "protocol": "http",
       "root": "/",
       "bodyParser": {
@@ -56,7 +77,7 @@ try:
           "protocol": "http",
           "host": target_addr,
           "root": "/",
-          "port": 8081,
+          "port": 8080,
           "driver": "sardines-service-driver-http"
       }
     }]
@@ -64,68 +85,6 @@ except Exception as e:
   print('Error while parsing providers and drivers and their settings')
   print(e)
   sys.exit(1)
-
-# Prepare host ssh access info
-os_user = args.os_user
-node_bin = args.node_bin
-
-def ssh_exec(cmd, work_dir = '~', env = None, bypassError = False):
-  ssh_cmd = 'ssh'
-  if args.ssh_port:
-    ssh_cmd += ' -p ' + args.ssh_port
-  remote_cmd = ''
-  if work_dir != '~':
-    remote_cmd = 'cd ' + work_dir + '; '
-  remote_path = '/usr/local/bin:/usr/bin:/bin:$HOME/bin'
-  if env == 'node':
-    remote_cmd += 'export PATH='+ remote_path +':~/node/bin:./node_modules/.bin; '
-  remote_cmd += cmd
-
-  ssh_cmd += ' ' + os_user + '@' + target_addr + ' "' + remote_cmd + '"'
-  print(ssh_cmd)
-  cmd_exit_code = os.system(ssh_cmd)
-  if cmd_exit_code != 0 and not bypassError:
-    print('error when executing ssh command, error code:' + str(cmd_exit_code))
-    sys.exit(cmd_exit_code)
-
-def scp(filepath, remote_file_path):
-  cmd = 'scp -r'
-  if args.ssh_port:
-    cmd += ' -P ' + args.ssh_port
-  cmd += ' ' + filepath + ' ' + os_user + '@' + target_addr + ':~/' + remote_file_path
-  print(cmd)
-  cmd_exit_code = os.system(cmd)
-  if cmd_exit_code != 0:
-    print('error when copying file to remote host, error code:' + str(cmd_exit_code))
-    sys.exit(cmd_exit_code)
-
-# setup remote workspace
-remote_work_dir = 'sardines.shoal'
-ssh_exec('mkdir -p ' + remote_work_dir)
-
-# stop previous watchdog
-cronCmd = 'crontab -l|grep -v '+remote_work_dir+'|awk \\"{if(NF>0)print}\\" > ./tmp_cron.txt '
-cronCmd += '&& if [ -s ./tmp_cron.txt ];then crontab ./tmp_cron.txt; '
-cronCmd += 'else crontab -r; fi'
-cronCmd += '&& rm -f ./tmp_cron.txt'
-ssh_exec(cronCmd, bypassError=True)
-
-# Copy node binary to the remote host (Linux)
-# ssh_exec("ps -ef|grep node|grep -v grep|awk '{print $2}'|xargs kill -9")
-ssh_exec('rm -rf node*')
-scp(node_bin, 'node.tar.xz')
-ssh_exec('tar -xf node.tar.xz && rm -f node.tar.xz && if [ ! -d node ];then mv node* node; fi')
-
-# Copy this sardines.shoal to the remote host
-
-for f in ['src', 'package.json', 'conf', 'watchdog.sh']:
-  scp(args.shoal_pkg + '/' + f, remote_work_dir + '/' + f)
-
-# Stop agent and services if exist
-ssh_exec('npm run stop', work_dir=remote_work_dir, env='node')
-
-# Build sardines.shoal on remote host
-ssh_exec('npm i && npm run build', work_dir=remote_work_dir, env='node')
 
 # prepare sardines.shoal.agent deploy plan
 agent_deploy_plan = {
@@ -157,14 +116,21 @@ for i in range(0, len(providers)):
   })
 
 # Prepare host info
+if args.os_user is not None:
+  os_user = args.os_user
+else:
+  os_user = getpass.getuser()
+if not os_user:
+  os_user = 'sardines'
+
 host_info = {
   "name": target_addr,
-  "account": args.os_user,
+  "account": os_user,
   "address": {},
   "providers": agent_deploy_plan["providers"]
 }
-if args.ipv4 is not None:
-  host_info["address"]["ipv4"] = args.ipv4
+if ipaddr is not None:
+  host_info["address"]["ipv4"] = ipaddr
 
 if args.ipv6 is not None:
   host_info["address"]["ipv6"] = args.ipv6
@@ -178,44 +144,92 @@ agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(60000)
 
 # generate deploy plan file for agent services
 try:
-  agentDeployPlanFile = args.shoal_pkg + '/' + 'deploy-agent.json'
+  agentDeployPlanFile = args.agent_deploy_plan_file
   with open(agentDeployPlanFile,'w') as f:
     json.dump(agent_deploy_plan, f, indent = 4)
     f.close()
-  scp(agentDeployPlanFile, remote_work_dir + '/deploy-agent.json')
+  print('Agent deploy plan has been generated at ' + agentDeployPlanFile)
 except Exception as e:
   print('Error while generating deploy plan for the agent services')
   print(e)
   sys.exit(1)
 
-# prepare repository entries and drivers for init service '/agent/setupRepositoryEntries'
-(repoEntries, drivers) = readEntriesAndDriversFromRepoDeployPlan(args.repo_deploy_file)
+if args.only_gen_agent_deploy_plan:
+  sys.exit(0)
 
-# generate sardines-config.json for agent services
-config = {
-  "application": "sardines",
-  "platform": "nodejs",
-  "srcRootDir": "./src",
-  "sardinesDir": "sardines",
-  "repositoryEntries": repoEntries,
-  "drivers": drivers
-}
+# copy sardines.shoal to target host
+# Prepare host ssh access info
+node_bin = args.node_bin
 
-try:
-  with open('./sardines-config.json', 'w') as f:
-    json.dump(config, f, indent=4)
-    f.close()
-  scp('./sardines-config.json', remote_work_dir + '/sardines-config.json')
-  os.remove('./sardines-config.json')
-except Exception as e:
-  print('Error while writing sardines-config.json', e)
-  sys.exit(1)
+def ssh_exec(cmd, work_dir = '~', env = None, bypassError = False):
+  ssh_cmd = 'ssh'
+  if args.ssh_port:
+    ssh_cmd += ' -p ' + args.ssh_port
+  remote_cmd = ''
+  if work_dir != '~':
+    remote_cmd = 'cd ' + work_dir + '; '
+  remote_path = '/usr/local/bin:/usr/bin:/bin:$HOME/bin'
+  if env == 'node':
+    remote_cmd += 'export PATH='+ remote_path +':~/node/bin:./node_modules/.bin; '
+  remote_cmd += cmd
+  
+  ssh_cmd += ' ' + os_user + '@' + target_addr + ' "' + remote_cmd + '"'
+  print(ssh_cmd)
+  cmd_exit_code = os.system(ssh_cmd)
+  if cmd_exit_code != 0 and not bypassError:
+    print('error when executing ssh command, error code:' + str(cmd_exit_code))
+    sys.exit(cmd_exit_code)
+
+def scp(filepath, remote_file_path):
+  cmd = 'scp -r'
+  if args.ssh_port:
+    cmd += ' -P ' + args.ssh_port
+  cmd += ' ' + filepath + ' ' + os_user + '@' + target_addr + ':~/' + remote_file_path
+  print(cmd)
+  cmd_exit_code = os.system(cmd)
+  if cmd_exit_code != 0:
+    print('error when copying file to remote host, error code:' + str(cmd_exit_code))
+    sys.exit(cmd_exit_code)
+
+# setup remote workspace
+remote_work_dir = 'sardines.shoal'
+ssh_exec('rm -rf ' + remote_work_dir)
+ssh_exec('mkdir -p ' + remote_work_dir)
+
+# stop previous watchdog
+cronCmd = 'crontab -l|grep -v '+remote_work_dir+'|awk \\"{if(NF>0)print}\\" > ./tmp_cron.txt '
+cronCmd += '&& if [ -s ./tmp_cron.txt ];then crontab ./tmp_cron.txt; '
+cronCmd += 'else crontab -r; fi'
+cronCmd += '&& rm -f ./tmp_cron.txt'
+ssh_exec(cronCmd, bypassError=True)
+
+# Copy node binary to the remote host (Linux)
+# ssh_exec("ps -ef|grep node|grep -v grep|awk '{print $2}'|xargs kill -9")
+ssh_exec('rm -rf node*')
+scp(node_bin, 'node.tar.xz')
+ssh_exec('tar -xf node.tar.xz && rm -f node.tar.xz && if [ ! -d node ];then mv node* node; fi')
+
+# Copy this sardines.shoal to the remote host
+for f in ['src', 'package.json', 'conf', 'sardines-config.json']:
+  scp(args.shoal_pkg + '/' + f, remote_work_dir + '/' + f)
+
+# Stop agent and services if exist
+ssh_exec('npm run stop', work_dir=remote_work_dir, env='node')
+
+# Build sardines.shoal on remote host
+ssh_exec('npm i && npm run build', work_dir=remote_work_dir, env='node')
+
+# copy agent deploy plna
+scp(agentDeployPlanFile, remote_work_dir + '/deploy-agent.json')
+os.system('rm -f ' + agentDeployPlanFile)
 
 # Start sardines.shoal.agent service
-ssh_exec('sardines-init', work_dir=remote_work_dir, env='node')
+# ssh_exec('sardines-init', work_dir=remote_work_dir, env='node')
+# ssh_exec('npm run build', work_dir=remote_work_dir, env='node')
 ssh_exec('nohup npm run startAgent >> agent.log 2>&1 &', work_dir=remote_work_dir, env='node')
 
 # Setup watchdog
+scp(args.shoal_pkg + '/watchdog.sh', remote_work_dir + '/watchdog.sh')
 cmd = 'echo \"WORKSPACE='+ remote_work_dir +'\" > tmp.txt'
 cmd += ' && sed "1d" watchdog.sh >> tmp.txt'
 cmd += ' && mv tmp.txt watchdog.sh'

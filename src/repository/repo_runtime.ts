@@ -232,10 +232,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
             }
             if (!runtimeInst) {
               await this.db!.set('service_runtime', runtimeData)
-              console.log('inserting', runtimeData)
             } else {
               await this.db!.set('service_runtime', runtimeData, runtimeQuery)
-              console.log('updating', runtimeData)
             }
           } catch(e) {
             console.error(`Error while saving runtime for service ${app}:${identity.module}:${identity.name}`, e)
@@ -243,7 +241,6 @@ export class RepositoryRuntime extends RepositoryDeployment {
         }
       }
     }
-    // utils.inspectedLog(cacheApps)
     return 'OK'
   }
 }

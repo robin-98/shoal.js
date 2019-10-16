@@ -9,7 +9,6 @@
 import { RepositoryHeart } from './repo_heart'
 import { Sardines } from 'sardines-core'
 import { Service } from './repo_data_structure'
-// import * as LocalUtils from './local_utils'
 
 export interface ServiceDeploymentTargets {
   application: string   // application name
@@ -43,10 +42,11 @@ export class RepositoryDeployment extends RepositoryHeart {
     let resourceInDB = await this.db!.get('resource', resourceIdentity)
     if (resourceInDB) {
       await this.db!.set('resource', resourceInfo, resourceIdentity)
-      return await this.db!.get('resource', resourceIdentity)
     } else {
-      return await this.db!.set('resource', resourceInfo)
+      await this.db!.set('resource', resourceInfo)
     }
+    resourceInDB = await this.db!.get('resource', resourceIdentity)
+    return resourceInDB
   }
 
   protected async generateDeployPlanFromBunchOfServices (serviceList: Service[]): Promise<(Sardines.DeployPlan|Sardines.ServiceDescriptionFile)[][]|null> {
@@ -117,7 +117,6 @@ export class RepositoryDeployment extends RepositoryHeart {
 
   public async deployServices(targets: ServiceDeploymentTargets, token: string) {
     await this.validateShoalUser(token)
-    console.log('create or update runtime of services:', targets)
     const hosts = targets.hosts
     const application = targets.application
     const services = targets.services 

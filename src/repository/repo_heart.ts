@@ -61,5 +61,8 @@ export class RepositoryHeart extends RepositoryDataStructure {
     await this.db!.set('resource_performance', null, {
       create_on: `lt:${Date.now() - 1000 * 60 * 60 * 24}`
     })
+    await this.db!.set('token', null, {
+      expire_on: `lt:${Date.now()}`
+    })
   }
 }
