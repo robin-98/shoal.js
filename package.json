@@ -61,5 +61,5 @@
         "stop": "if [ `ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'; ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; echo 'sardines stopped'; fi"
     },
     "type": "lib/index.d.ts",
-    "version": "0.1.11"
+    "version": "0.1.12"
 }
