@@ -22,7 +22,7 @@
                 "syslog": true,
                 "public": {
                     "protocol": "http",
-                    "host": "localhost",
+                    "host": "mba-robin",
                     "root": "/",
                     "port": 8080,
                     "driver": "sardines-service-driver-http"
@@ -43,7 +43,7 @@
                     "service": "/agent/startHost",
                     "arguments": [
                         {
-                            "name": "localhost",
+                            "name": "mba-robin",
                             "account": "rin",
                             "address": {},
                             "providers": [
@@ -69,7 +69,7 @@
                                         "syslog": true,
                                         "public": {
                                             "protocol": "http",
-                                            "host": "localhost",
+                                            "host": "mba-robin",
                                             "root": "/",
                                             "port": 8080,
                                             "driver": "sardines-service-driver-http"

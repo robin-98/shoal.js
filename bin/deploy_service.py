@@ -4,7 +4,7 @@ import sys
 import os
 import argparse
 import json
-from lib.read_entries_from_repository_deploy_plan import readEntriesAndDriversFromRepoDeployPlan
+from lib.read_deploy_plan import readDeployPlan
 
 argParser = argparse.ArgumentParser(description = 'command-line-tool to deploy sardines service on any remote host')
 argParser.add_argument('--application', type=str, required=True, help='Application name')
@@ -71,11 +71,11 @@ else:
 
 # Invoke repository service to deploy services
 # need to invoke sardines-core from command line to invoke some services
-(repoEntries, drivers) = readEntriesAndDriversFromRepoDeployPlan(args.repo_deploy_plan)
+(host, entries, drivers) = readDeployPlan(args.repo_deploy_plan)
 
 cmd = 'sardines-repository-client --cmd="deployServices"'
 cmd += " --drivers='" + json.dumps(drivers) + "'"
-cmd += " --entries='" + json.dumps(repoEntries) + "'"
+cmd += " --entries='" + json.dumps(entries) + "'"
 
 data = {
   "application": application,

@@ -28,7 +28,7 @@ export const rmdir = (dir: string) => {
 }
 
 
-export const parseDeployPlanFile = async (filepath: string, verbose: boolean = false): Promise<Sardines.DeployPlan> => {
+export const parseDeployPlanFile = (filepath: string, verbose: boolean = false): Sardines.DeployPlan => {
     if (!fs.existsSync(filepath)) {
         console.error(`Can not access file ${filepath}`)
         throw utils.unifyErrMesg(`Can not access file ${filepath}`, 'deployer', 'settings file')

@@ -2,7 +2,7 @@
 import sys
 import argparse
 import json
-from lib.read_entries_from_repository_deploy_plan import readEntriesAndDriversFromRepoDeployPlan
+from lib.read_deploy_plan import readDeployPlan
 
 argParser = argparse.ArgumentParser(description = 'Generate sardines config file from repository deployment file')
 argParser.add_argument('--repo-deploy-file', type=str, required=True, help='The sardines repository used to manage the resource')
@@ -16,14 +16,14 @@ cmdlineArgs = argParser.parse_args()
 
 def genConfigFromRepoDeployPlan(args):
   # parse repo deploy plan
-  (repoEntries, drivers) = readEntriesAndDriversFromRepoDeployPlan(args.repo_deploy_file)
+  (host, entries, drivers) = readDeployPlan(args.repo_deploy_file)
 
   config = {
     "application": args.application,
     "platform": args.platform,
     "srcRootDir": args.source_root_dir,
     "sardinesDir": args.sardines_dir,
-    "repositoryEntries": repoEntries,
+    "repositoryEntries": entries,
     "drivers": drivers
   }
 

@@ -11,10 +11,7 @@ import * as proc from 'process'
 import { utils, Sardines, Factory } from 'sardines-core'
 import { Source } from 'sardines-compile-time-tools'
 
-import {
-    parseDeployPlanFile,
-    getServiceDefinitionsMap
-} from './deployer_utils'
+import { getServiceDefinitionsMap } from './deployer_utils'
 import * as fs from 'fs';
 
 const {params} = utils.parseArgs()
@@ -30,11 +27,7 @@ const getSourceCodeFilePath = (filepath: string): string => {
 // serviceDefinitions: array of service definition file content, each for an application or part of an application
 // start or get an instance from factory of the provider
 // Register services on the specified provider
-export const deploy = async (filepathOrDeployPlan: string|Sardines.DeployPlan, serviceDefinitions: any[], verbose: boolean = false) => {
-    const filepath = (typeof filepathOrDeployPlan === 'string') ? filepathOrDeployPlan : null
-    const deployPlan = filepath ? await parseDeployPlanFile(filepath, verbose)
-                       : <Sardines.DeployPlan>filepathOrDeployPlan
-                       
+export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions: any[], verbose: boolean = false) => {
     if (!serviceDefinitions || !Array.isArray(serviceDefinitions) || !deployPlan.applications || !Array.isArray(deployPlan.applications)) {
         console.error(`No service is setup to deploy`)
         return

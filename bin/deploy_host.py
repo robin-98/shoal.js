@@ -5,26 +5,31 @@ import argparse
 import json
 import getpass
 import socket
+from lib.read_deploy_plan import readDeployPlan
 
 cwd = os.getcwd()
 argParser = argparse.ArgumentParser(description='Deploy the sardines shoal agent on a remote host via ssh')
+argParser.add_argument('--repo-deploy-file', type=str, required=True, help='The sardines repository used to manage the resource')
 argParser.add_argument('--host-name', type=str, required=False, default='local', help='Remote host name')
+argParser.add_argument('--use-repo-host-name', type=bool, required=False, default=False, help='used when deploying repository services on local machine, to use hostname in repo deploy plan')
 argParser.add_argument('--os-user', type=str, required=False, help='OS user on the remote host')
 argParser.add_argument('--ipv4', type=str, required=False, help='IPv4 address of the remote host')
 argParser.add_argument('--ssh-port', type=int, required=False, help='SSH port of the remote host')
 argParser.add_argument('--ipv6', type=str, required=False, help='IPv6 address of the remote host')
 argParser.add_argument('--node-bin', type=str, required=False, default='./bin/node-v12.8.0-linux-x64.tar.xz', help='Node binary package to be copied to remote host')
 argParser.add_argument('--shoal-pkg', type=str, required=False, default=cwd, help='Sardines shoal source package location')
-argParser.add_argument('--repo-deploy-file', type=str, required=True, help='The sardines repository used to manage the resource')
 argParser.add_argument('--providers', type=str, required=False, default='sardines-service-provider-http', help='Providers for the host to launch services, seperated by ","')
 argParser.add_argument('--provider-settings', type=str, required=False, default='null', help='Provider settings for the providers, in JSON format, must be an array')
 argParser.add_argument('--only-gen-agent-deploy-plan', type=bool, required=False, default=False, help='Only generate deploy plan of agent on target host')
 argParser.add_argument('--agent-deploy-plan-file', type=str, required=False, default='./tmp-deploy-agent.json', help='Agent deploy plan file path')
 argParser.add_argument('--agent-heartbeat-interval-sec', type=int, required=False, default=58, help='Heartbeat interval in seconds')
-
-
 args = argParser.parse_args()
+
+(host, entries, drivers) = readDeployPlan(args.repo_deploy_file)
+
 target_addr = args.host_name
+if args.use_repo_host_name and host is not None and 'name' in host:
+  target_addr = host['name']
 ipaddr = None
 if target_addr == 'local':
   target_addr = socket.gethostname()
@@ -49,9 +54,6 @@ elif not target_addr or target_addr == 'local':
   target_addr = 'localhost'
 
 # prepare repository entries and drivers for init service '/agent/setupRepositoryEntries'
-# from lib.read_entries_from_repository_deploy_plan import readEntriesAndDriversFromRepoDeployPlan
-# (repoEntries, drivers) = readEntriesAndDriversFromRepoDeployPlan(args.repo_deploy_file)
-
 # Prepare providers info for agent deploy plan
 try:
   providers = args.providers.split(',')

@@ -1,4 +1,7 @@
 {
+    "host": {
+        "name": "mba-robin"
+    },
     "providers": [{
         "code": {
             "name": "sardines-service-provider-http",
