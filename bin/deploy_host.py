@@ -20,6 +20,7 @@ argParser.add_argument('--providers', type=str, required=False, default='sardine
 argParser.add_argument('--provider-settings', type=str, required=False, default='null', help='Provider settings for the providers, in JSON format, must be an array')
 argParser.add_argument('--only-gen-agent-deploy-plan', type=bool, required=False, default=False, help='Only generate deploy plan of agent on target host')
 argParser.add_argument('--agent-deploy-plan-file', type=str, required=False, default='./tmp-deploy-agent.json', help='Agent deploy plan file path')
+argParser.add_argument('--agent-heartbeat-interval-sec', type=int, required=False, default=58, help='Heartbeat interval in seconds')
 
 
 args = argParser.parse_args()
@@ -140,7 +141,7 @@ if args.ssh_port is not None:
 
 # set host info as parameter for init service '/agent/startHost'
 agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(host_info)
-agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(60000)
+agent_deploy_plan['applications'][0]['init'][0]['arguments'].append(args.agent_heartbeat_interval_sec*1000)
 
 # generate deploy plan file for agent services
 try:

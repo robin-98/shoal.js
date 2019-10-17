@@ -119,26 +119,34 @@ export class RepositoryRuntime extends RepositoryDeployment {
   async updateServiceRuntime(runtimeOfApps: any, token: string, bypassToken: boolean = false) {
     if (!bypassToken) await this.validateToken(token, true)
 
-    if (!runtimeOfApps) {
+    if (!runtimeOfApps || !runtimeOfApps.deployResult) {
       throw utils.unifyErrMesg('invalid service runtime', 'repository', 'update service runtime')
     }
+    if (!runtimeOfApps.resourceId) {
+      throw utils.unifyErrMesg('resourceId is missing in service runtime', 'repository', 'update service runtime')
+    }
+    let resourceId:string = runtimeOfApps.resourceId
     const cacheApps: {[key: string]: any} = {}
-    for (let app of Object.keys(runtimeOfApps)) {
+    for (let app of Object.keys(runtimeOfApps.deployResult)) {
       let cacheEntries : {[key: string]: any} = {}
       cacheApps[app] = cacheEntries
-      let serviceRuntime = runtimeOfApps[app]
+      let serviceRuntime = runtimeOfApps.deployResult[app]
       // query appId
       let appId = null
       try {
         appId = await this.db!.get('application', {name: app})
         if (!appId) {
-          console.error(`logging runtime for unregistered application ${app} in repository`)
           if (app !== 'sardines') {
             throw `Unregistered application [${app}] is not allowed to register service runtime`
           }
         }
       } catch (e) {
         console.error(`ERROR while querying application id application ${app}`, e)
+        continue
+      }
+      
+      if (!serviceRuntime || !serviceRuntime.length) {
+        console.error(`ERROR: can not log empty service runtime for application [${app}]`)
         continue
       }
       for (let runtime of serviceRuntime) {
@@ -165,10 +173,6 @@ export class RepositoryRuntime extends RepositoryDeployment {
         }
         for (let entry of runtime.entries) {
           if (!entry.providerInfo || !entry.providerInfo.driver || !entry.providerInfo.protocol) continue
-          if (!entry.resource_id && app !== 'sardines') {
-            console.error(`can not log service runtime without resource id for application [${app}]`)
-            continue
-          }
           const pvdrKey = `${entry.type}|${entry.providerName}|${JSON.stringify(entry.providerInfo)}`
           if (!cacheEntries[pvdrKey]) cacheEntries[pvdrKey] = {
             entry: {
@@ -206,6 +210,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
           // prepare service runtime data in db
           const runtimeQuery = Object.assign({}, identity, entry)
           runtimeQuery.settingsForProvider = settingsForProvider
+          runtimeQuery.resource_id = resourceId
           // convert properties to db columns
           for (let prop of [
             {p:'providerName', db:'provider_name'},
@@ -227,9 +232,6 @@ export class RepositoryRuntime extends RepositoryDeployment {
             const runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
             const runtimeData = Object.assign({}, runtimeQuery)
             runtimeData.status = Sardines.Runtime.RuntimeStatus.ready
-            if (runtimeQuery.application === 'sardines') {
-              runtimeData.workload_percentage = 0
-            }
             if (!runtimeInst) {
               await this.db!.set('service_runtime', runtimeData)
             } else {

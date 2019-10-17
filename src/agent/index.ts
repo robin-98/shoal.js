@@ -4,11 +4,12 @@ import { SystemLoad } from '../interfaces/system_load'
 
 export interface Resource extends Sardines.Runtime.Resource { }
 
+export let hasHostStatStarted = false
+export let hostPerf: SystemLoad|null = null
+export let hostId: string|null = null
+
 export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 1000) => {
   // Start heartbeat
-  let hasHostStatStarted = false
-  let hostPerf: SystemLoad|null = null
-  let hostId: string|null = null
   const heartbeat = async() => {
     if (!hasHostStatStarted) {
       hostPerf = await getCurrentLoad(hostInfo.name, hostInfo.account)

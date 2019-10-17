@@ -142,18 +142,18 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         },
         maxCpuProc: { 
             name: 'VARCHAR(30)',
-            cpu: 'NUMERIC(3,1)',
-            mem: 'NUMERIC(3,1)'
+            cpu: 'NUMERIC(6,1)',
+            mem: 'NUMERIC(6,1)'
         },
         maxMemProc: { 
             name: 'VARCHAR(30)',
-            cpu: 'NUMERIC(3,1)',
-            mem: 'NUMERIC(3,1)'
+            cpu: 'NUMERIC(6,1)',
+            mem: 'NUMERIC(6,1)'
         },
         agentProc: { 
             name: 'VARCHAR(30)',
-            cpu: 'NUMERIC(3,1)',
-            mem: 'NUMERIC(3,1)'
+            cpu: 'NUMERIC(6,1)',
+            mem: 'NUMERIC(6,1)'
         },
         disk: {
             rx_sec: 'INT',
@@ -256,6 +256,7 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
 
     constructor() {
         super()
+        this.tokenExpireInSeconds = 1800
     }
 
     public async setup(repoSettings: RepositorySettings) {

@@ -7,11 +7,12 @@
  */
 
 import * as serviceDeployer from './deployer/service_deployer'
-import { utils } from 'sardines-core'
+import { utils, Sardines } from 'sardines-core'
 import * as path from 'path'
 import * as proc from 'process'
 import * as fs from 'fs'
 import { RepositoryClient } from 'sardines-core'
+import * as agent from './agent'
 
 // setup repository client
 const sardinesConfigFilepath = path.resolve(proc.cwd(), './sardines-config.json')
@@ -48,7 +49,11 @@ export const deployServices = async (serviceDefinitionFile: string, serviceDeplo
 const {files} = utils.parseArgs()
 if (files && files.length >= 2 && files.length % 2 === 0) {
     const jobs = async() => {
-        const serviceRuntimeQueue = []
+        interface DeployJobResult {
+            deployPlanFile: string
+            res: Sardines.Runtime.DeployResult
+        }
+        const serviceRuntimeQueue: DeployJobResult[] = []
         for (let i = 0; i<files.length; i+=2) {
             const serviceDefinitionFile = files[i]
             const serviceDeployPlanFile = files[i+1]
@@ -61,15 +66,20 @@ if (files && files.length >= 2 && files.length % 2 === 0) {
             }
         }
 
-        const sendDeployResultToRepository = async(deployResult: any) => {
+        const sendDeployResultToRepository = async(deployResult: DeployJobResult, hostId: string) => {
             if (!deployResult || !deployResult.res ) return
             // if config file exists it will be used 
             // to setup repo_client module automatically
-            // in the out most index.ts file
             // no worry about using repo_client module
 
-            // TODO: use repo_client to send service runtimes to its self
-            let res = await RepositoryClient.exec('updateServiceRuntime', deployResult.res)
+            // wrap hostId
+            const data :any = {
+                resourceId: hostId,
+                deployResult: deployResult.res
+            }
+
+            // use repo_client to send service runtimes to its self
+            let res = await RepositoryClient.exec('updateServiceRuntime', data)
             console.log(`response of updateServiceRuntime for [${deployResult.deployPlanFile}]:`, res)
 
             // or just invoke repository method from memory
@@ -80,10 +90,17 @@ if (files && files.length >= 2 && files.length % 2 === 0) {
             // it's duplicated process with repo_client, so don't use inside invocation
         }
         
+        // wait for agent to get host id
+        while (!agent.hasHostStatStarted || !agent.hostId) {
+            await utils.sleep(100)
+        }
+        // send deploy result
         for (let deployResult of serviceRuntimeQueue) {
-            await sendDeployResultToRepository(deployResult)
+            await sendDeployResultToRepository(deployResult, agent.hostId)
         }
     }
     
-    jobs().then(()=>{})
+    jobs().then(()=>{}).catch(e=> {
+        console.error('unknow error while deploying services:', e)
+    })
 }
