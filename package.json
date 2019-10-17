@@ -61,5 +61,5 @@
         "prepublish": "npm run clearPackages && npm run build"
     },
     "type": "lib/deployServices.d.ts",
-    "version": "0.1.17"
+    "version": "0.1.18"
 }
