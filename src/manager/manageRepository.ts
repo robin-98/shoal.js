@@ -30,7 +30,10 @@ const manager = async() => {
       for (let app of repoDeployPlan.applications) {
         if (app.name === 'sardines') {
           for (let serv of app.init) {
-            if (serv.service === '/repository/setup') {
+            if (serv.service 
+              && serv.service.module === '/repository'
+              && serv.service.name === 'setup'
+              ) {
               user = serv.arguments[0].owner.name
               password = serv.arguments[0].owner.password
               break

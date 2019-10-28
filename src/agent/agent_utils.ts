@@ -7,7 +7,10 @@ export const getRepositoryShoalUser = (repoDeployPlan: Sardines.DeployPlan): {na
     repoDeployPlan.applications.forEach(item => {
       if (item.name === 'sardines' && item.init && item.init.length) {
         item.init.forEach(initItem => {
-          if (initItem.service === '/repository/setup' && initItem.arguments && initItem.arguments.length) {
+          if (initItem.service
+            && initItem.service.module === '/repository'
+            && initItem.service.name === 'setup'
+            && initItem.arguments && initItem.arguments.length) {
             if (initItem.arguments[0].shoalUser && initItem.arguments[0].shoalUser.name && initItem.arguments[0].shoalUser.password) {
               account = {
                 name: initItem.arguments[0].shoalUser.name,

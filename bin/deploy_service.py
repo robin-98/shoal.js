@@ -12,6 +12,9 @@ argParser.add_argument('--services', type=str, required=False, help='Services to
 argParser.add_argument('--version', type=str, required=False, default='*', help='Target version')
 argParser.add_argument('--hosts', type=str, required=False, help='Target host name or list of hosts, seperated by ",", format as "<user name>@<host name>". If omitted then automatically select one')
 argParser.add_argument('--repo-deploy-plan', type=str, required=True, help='Deploy plan file path for repository')
+argParser.add_argument('--use-all-providers', type=bool, required=False, default=True, help='if use all the available providers on target hosts')
+argParser.add_argument('--providers', type=str, required=False, help='Provider settings for the providers, in JSON format, must be an array, but can NOT be used for multiple hosts, this argument is only allowed for one host')
+argParser.add_argument('--init-parameters', type=str, required=False, help='Init parameters for services which need to be init, in JSON format, must be an array, and the sequence is guaranteed while deploying, also for one host usage')
 
 args = argParser.parse_args()
 
@@ -81,8 +84,24 @@ data = {
   "application": application,
   "services": services,
   "hosts": hosts,
-  "version": version
+  "version": version,
+  "useAllProviders": args.use_all_providers
 }
+if args.providers is not None:
+  if os.path.isfile(args.providers):
+    with open(args.providers) as f:
+      data["providers"] = json.load(f)
+      f.close()
+  else:
+    data["providers"] = json.loads(args.providers)
+
+if args.init_parameters is not None:
+  if os.path.isfile(args.init_parameters):
+    with open(args.init_parameters) as f:
+      data["initParams"] = json.load(f)
+      f.close()
+  else:
+    data["initParams"] = json.loads(args.init_parameters)
 
 cmd += " --data='" + json.dumps(data) + "'"
 

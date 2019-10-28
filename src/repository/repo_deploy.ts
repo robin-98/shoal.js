@@ -8,7 +8,9 @@
 
 import { RepositoryHeart } from './repo_heart'
 import { Sardines } from 'sardines-core'
+import { utils } from 'sardines-core'
 import { Service } from './repo_data_structure'
+import { Core } from 'sardines-core'
 
 export interface ServiceDeploymentTargets {
   application: string   // application name
@@ -19,6 +21,9 @@ export interface ServiceDeploymentTargets {
   }[],
   hosts: string[]       // host names, if empty means to automatically find one
   version: string       // target version, '*' for latest one of the application
+  useAllProviders: boolean
+  providers?: any[]
+  initParams?: any[]
 }
 
 export class RepositoryDeployment extends RepositoryHeart {
@@ -49,7 +54,7 @@ export class RepositoryDeployment extends RepositoryHeart {
     return resourceInDB
   }
 
-  protected async generateDeployPlanFromBunchOfServices (serviceList: Service[]): Promise<(Sardines.DeployPlan|Sardines.ServiceDescriptionFile)[][]|null> {
+  protected async generateDeployPlanFromBunchOfServices (serviceList: Service[]): Promise<{deployPlan: Sardines.DeployPlan,serviceDescObj: Sardines.ServiceDescriptionFile}[]|null> {
     const result = []
     const cacheSourceVersionServices: {[key: string]: Service[]}= {}
     for (let service of serviceList) {
@@ -91,12 +96,6 @@ export class RepositoryDeployment extends RepositoryHeart {
       }
       // iterate the services
       for (let service of services) {
-        if (service.init_params) {
-          deployPlan.applications[0].init.push({
-            service: `${service.module}/${service.name}`,
-            arguments: service.init_params
-          })
-        }
         serviceDescObj.services.push({
           name: service.name,
           module: service.module,
@@ -108,7 +107,7 @@ export class RepositoryDeployment extends RepositoryHeart {
       }
 
       // save the deploy plan
-      result.push([deployPlan, serviceDescObj])
+      result.push({deployPlan, serviceDescObj})
     }
   
     if (result.length) return result
@@ -121,6 +120,15 @@ export class RepositoryDeployment extends RepositoryHeart {
     const application = targets.application
     const services = targets.services 
     const version = targets.version
+    const initParams = targets.initParams
+    const providers = targets.providers
+    const res = []
+    // application should be single
+    if (application && 
+      (application.indexOf(';')>=0 || application.indexOf(',')>=0 || application.indexOf(':')>=0)
+      ) {
+        throw 'Multiple application mode is not supported while deploy services'
+    }
 
     // CAUTION: deployment is devided by source repositories/versions,
     // not only by applications
@@ -158,10 +166,11 @@ export class RepositoryDeployment extends RepositoryHeart {
         }
       }
     }
+
     // Generate deploy plan for distinct sources and versions
     const dplist = await this.generateDeployPlanFromBunchOfServices(serviceList)
     if (!dplist || !dplist.length) return null
-    const res = []
+    
     // Query target hosts and setup providers
     const hostInfoList = []
     if (!hosts || !hosts.length) {
@@ -192,40 +201,88 @@ export class RepositoryDeployment extends RepositoryHeart {
         hostInfoList.push(hostInfo)
       }
     }
+
+    // prepare deploy plans according to different host
     for (let hostInfo of hostInfoList) {
-      if (hostInfo && hostInfo.providers && Array.isArray(hostInfo.providers)) {
-        for (let dp of dplist) {
-          if (!dp || !dp.length || dp.length !== 2) continue
-          const deployPlan = <Sardines.DeployPlan>dp[0]
-          const serviceDescObj = <Sardines.ServiceDescriptionFile>dp[1]
-          deployPlan.providers = hostInfo.providers
-          // populate providers application settings
-          for (let service of serviceList) {
-            if (!service.provider_settings || !Array.isArray(service.provider_settings) || !service.provider_settings.length) continue
-            for (let ps of service.provider_settings) {
-              if (!ps.protocol) continue
-              for (let pvdr of hostInfo.providers) {
-                if (!pvdr.protocol || pvdr.protocol.toLowerCase() !== ps.protocol.toLowerCase()) continue
-                if (!pvdr.applicationSettings) {
-                  pvdr.applicationSettings = [{
-                    application: service.application!,
-                    serviceSettings: []
-                  }]
-                }
-                delete ps.protocol
-                pvdr.applicationSettings[0].serviceSettings.push({
-                  module: service.module!,
-                  name: service.name,
-                  settings: ps
-                })
-              }
+      if (!hostInfo || !hostInfo.providers || !Array.isArray(hostInfo.providers) || !hostInfo.providers.length) continue
+      // generate deploy plan and service desc obj for the single host
+      const deployPlanAndDescObjForHost: {deployPlan: any, serviceDescObj: any}[] = []
+      for (let dp of dplist) {
+        const {deployPlan, serviceDescObj} = dp
+        deployPlan.providers = []
+        Array.prototype.push.apply(deployPlan.providers, hostInfo.providers)
+        // Add providers from request
+        if (providers && Array.isArray(providers) && providers.length > 0) {
+          for (let addedProvider of providers) {
+            let found = false
+            for (let provider of deployPlan.providers) {
+              if (utils.isEqual(provider, addedProvider)) found = true
+            }
+            if (!found) {
+              deployPlan.providers.push(addedProvider)
             }
           }
-          // TODO: push to target host
-          res.push([hostInfo, deployPlan, serviceDescObj])
         }
+        // populate init params
+        if (initParams && Array.isArray(initParams) && initParams.length>0) {
+          Array.prototype.push.apply(deployPlan.applications[0].init, initParams)
+        }
+        // populate providers application settings
+        for (let service of serviceList) {
+          if (!service.provider_settings || !Array.isArray(service.provider_settings) || !service.provider_settings.length) continue
+          for (let ps of service.provider_settings) {
+            if (!ps.protocol) continue
+            for (let pvdr of hostInfo.providers) {
+              if (!pvdr.protocol || pvdr.protocol.toLowerCase() !== ps.protocol.toLowerCase()) continue
+              if (!pvdr.applicationSettings) {
+                pvdr.applicationSettings = [{
+                  application: service.application!,
+                  serviceSettings: []
+                }]
+              }
+              delete ps.protocol
+              pvdr.applicationSettings[0].serviceSettings.push({
+                module: service.module!,
+                name: service.name,
+                settings: ps
+              })
+            }
+          }
+        }
+        // TODO: push to target host
+        // using sardines-core invoke to request
+        deployPlanAndDescObjForHost.push({deployPlan, serviceDescObj})
+        res.push({hostInfo, deployPlan, serviceDescObj})
+      }
+      // find out what provider the agent is using
+      const {provider_info, settings_for_provider, entry_type} = await this.db!.get('service_runtime', {
+        resource_id: hostInfo.id,
+        application: 'sardines',
+        module: '/agent'
+      }, null, 1, 0, ['provider_info', 'settings_for_provider', 'entry_type'])
+      // send deploy plan and service description objects to the host using the particular provider
+      try {
+        const runtime: Sardines.Runtime.Service = {
+          identity: {
+            application: 'sardines',
+            module: '/agent',
+            name: 'deployService'
+          },
+          entries: [{
+            providerInfo: provider_info,
+            settingsForProvider: settings_for_provider,
+            type: entry_type
+          }]
+        }
+        const res = await Core.invoke(runtime, deployPlanAndDescObjForHost)
+        console.log('response from agent:')
+        utils.inspectedLog(res)
+      } catch (e) {
+        console.log('Error while requesting agent:')
+        utils.inspectedLog(e)
       }
     }
+
     if (!res.length) return null
     else return res
   }

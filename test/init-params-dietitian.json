@@ -1,0 +1,27 @@
+[{
+  "service": {
+      "module": "/auth",
+      "name": "genSMSToken"
+  },
+  "arguments": [{
+      "db": {
+          "type": "postgres",
+          "settings": {
+              "host": "localhost",
+              "port": 5432,
+              "database": "sardines_test",
+              "schema": "test",
+              "user": "sardines",
+              "password": "Sardines2019"
+          }
+      },
+      "owner": {
+          "name": "robin",
+          "password": "Startup@2013"
+      },
+      "shoalUser": {
+          "name": "sardines-shoal",
+          "password": "Sardines@2019"
+      }
+  }]
+}]

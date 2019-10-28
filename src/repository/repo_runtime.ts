@@ -89,28 +89,52 @@ export class RepositoryRuntime extends RepositoryDeployment {
     return { runtimeObj, table }
   }
 
-  async fetchServiceRuntime(serviceIdentity: Sardines.ServiceIdentity|Sardines.ServiceIdentity[], token: string, bypassToken: boolean = false): Promise<any> {
+  async fetchServiceRuntime(serviceIdentity: Sardines.ServiceIdentity|Sardines.ServiceIdentity[], token: string, bypassToken: boolean = false): Promise<Sardines.Runtime.Service|Sardines.Runtime.Service[]|null> {
     if (!serviceIdentity || !token) return null
     if (!bypassToken) await this.validateToken(token, true)
     if (Array.isArray(serviceIdentity)) {
-      let res = []
+      let res: Sardines.Runtime.Service[] = []
       for (let i=0; i<serviceIdentity.length; i++) {
-        let resItem: Sardines.Runtime.Service|null = await this.fetchServiceRuntime(serviceIdentity[i], token, bypassToken=true)
-        res.push(resItem)
+        let resItem: Sardines.Runtime.Service|null = <Sardines.Runtime.Service|null>await this.fetchServiceRuntime(serviceIdentity[i], token, bypassToken=true)
+        if (resItem) res.push(resItem)
       }
       return res
     } else {
-      let service = <Service|null>await this.queryService(serviceIdentity, token, bypassToken = true)
-      if (service) {
-        let runtime = await this.findAvailableRuntime(Sardines.Runtime.RuntimeTargetType.service, service)
-        // if (!runtime) {
-        //   // notify some resource to deploy one instance of the service
-        //   runtime = await this.deployService(service)
-        //   // runtime could be null if:
-        //   // 1. there have no available resource to deploy the service
-        //   // 2. someone else is doing the deployment job
-        // }
-        return runtime
+      let serviceQuery: any = {}
+      if (!serviceIdentity.application || !serviceIdentity.module ||!serviceIdentity.name) {
+        throw utils.unifyErrMesg(`Invalid service while querying service runtime`, 'repository', 'fetch service runtime')
+      }
+      serviceQuery.application = serviceIdentity.application
+      serviceQuery.module = serviceIdentity.module
+      serviceQuery.name = serviceIdentity.name
+      if (serviceIdentity.version && serviceIdentity.version !== '*') serviceQuery.version = serviceIdentity.version
+
+      let service  :Service|null = null
+      if (serviceIdentity.application !== 'sardines') service = <Service|null>await this.queryService(serviceQuery, token, bypassToken = true)
+      if (serviceIdentity.application === 'sardines' || service) {
+        if (service) serviceQuery = { service_id: service.id }
+        let runtime :any = await this.findAvailableRuntime(Sardines.Runtime.RuntimeTargetType.service, serviceQuery)
+        if (runtime) {
+          let result: Sardines.Runtime.Service = {
+            identity: {
+              application: serviceIdentity.application,
+              module: serviceIdentity.module,
+              name: serviceIdentity.name,
+              version: runtime.version
+            },
+            entries: [{
+              type: runtime.entry_type,
+              providerInfo: runtime.provider_info,
+              settingsForProvider: runtime.settings_for_provider
+            }],
+            expireInSeconds: runtime.expire_in_seconds
+          }
+          if (service) {
+            result.arguments = service.arguments
+            result.returnType = service.return_type
+          }
+          return result
+        }
       }
     }
     return null
@@ -171,6 +195,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
             continue
           }
         }
+        
         for (let entry of runtime.entries) {
           if (!entry.providerInfo || !entry.providerInfo.driver || !entry.providerInfo.protocol) continue
           const pvdrKey = `${entry.type}|${entry.providerName}|${JSON.stringify(entry.providerInfo)}`
@@ -183,18 +208,23 @@ export class RepositoryRuntime extends RepositoryDeployment {
             },
             services: []
           }
+          const rtInst: any = {identity, settingsForProvider: entry.settingsForProvider}
+          if (runtime.arguments) {
+            rtInst.arguments = runtime.arguments
+          }
           const cache = cacheEntries[pvdrKey]
-          cache.services.push({identity, settingsForProvider: entry.settingsForProvider})
+          cache.services.push(rtInst)
         }
       }
     }
     for (let app in cacheApps) {
-      for (let runtime in cacheApps[app]) {
-        const entry = cacheApps[app][runtime].entry
-        const services = cacheApps[app][runtime].services
+      for (let pvdrKey in cacheApps[app]) {
+        const entry = cacheApps[app][pvdrKey].entry
+        const services = cacheApps[app][pvdrKey].services
         for (let service of services) {
           const identity = service.identity
           const settingsForProvider = service.settingsForProvider
+          const serviceArguments = service.arguments
           if (!identity.service_id && app !== 'sardines') {
             // query service
             try {
@@ -208,7 +238,11 @@ export class RepositoryRuntime extends RepositoryDeployment {
             }
           }
           // prepare service runtime data in db
-          const runtimeQuery = Object.assign({}, identity, entry)
+          const runtimeQuery: any = Object.assign({}, identity, entry)
+          if (serviceArguments && identity.application !== 'sardines') {
+            runtimeQuery.arguments = serviceArguments
+          }
+          
           runtimeQuery.settingsForProvider = settingsForProvider
           runtimeQuery.resource_id = resourceId
           // convert properties to db columns
@@ -216,8 +250,10 @@ export class RepositoryRuntime extends RepositoryDeployment {
             {p:'providerName', db:'provider_name'},
             {p:'providerInfo', db:'provider_info'},
             {p:'settingsForProvider', db:'settings_for_provider'},
-            {p:'type', db:'entry_type'}
+            {p:'type', db:'entry_type'},
+            {p:'arguments', db:'init_params'}
           ]) {
+            if (typeof runtimeQuery[prop.p] === 'undefined') continue
             runtimeQuery[prop.db] = runtimeQuery[prop.p]
             delete runtimeQuery[prop.p]
           }

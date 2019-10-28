@@ -1,8 +1,8 @@
 {
     "providers": [
         {
+            "name": "sardines-service-provider-http",
             "code": {
-                "name": "sardines-service-provider-http",
                 "locationType": "npm"
             },
             "providerSettings": {
@@ -48,8 +48,8 @@
                             "address": {},
                             "providers": [
                                 {
+                                    "name": "sardines-service-provider-http",
                                     "code": {
-                                        "name": "sardines-service-provider-http",
                                         "locationType": "npm"
                                     },
                                     "providerSettings": {
@@ -78,7 +78,7 @@
                                 }
                             ]
                         },
-                        58000
+                        5000
                     ]
                 }
             ]

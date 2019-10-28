@@ -3,8 +3,8 @@
         "name": "mba-robin"
     },
     "providers": [{
+        "name": "sardines-service-provider-http",
         "code": {
-            "name": "sardines-service-provider-http",
             "locationType": "npm"
         },
         "providerSettings": {
@@ -68,7 +68,10 @@
         },
         "version": "*",
         "init": [{
-            "service": "/repository/setup",
+            "service": {
+                "module": "/repository",
+                "name": "setup"
+            },
             "arguments": [{
                 "db": {
                     "type": "postgres",

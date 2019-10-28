@@ -52,8 +52,6 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         return_type: 'VARCHAR(100)',
         is_async: 'BOOLEAN',
         file_path: 'VARCHAR(100)',
-        provider_settings: 'JSONB', // Array, enlist all possible provider/driver pairs and provider settings
-        init_params: 'JSONB',   // service used init parameters
         UNIQUE: ['application', 'module', 'name', 'version']
     },
     source: {
@@ -84,7 +82,8 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         entry_type: 'VARCHAR(20)',
         provider_name: 'VARCHAR(100)',
         provider_info: 'JSONB',
-        settings_for_provider: 'JSONB'
+        settings_for_provider: 'JSONB',
+        init_params: 'JSONB',   // service used init parameters
     },
     resource: {
         id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
@@ -411,7 +410,7 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
                 } else if (!appInst && service.application_id) {
                     throw utils.unifyErrMesg('Invalid application id', 'repository', 'service')
                 }
-                serviceInst = Object.assign({application_id: appInst.id}, service)
+                serviceInst = Object.assign({application_id: appInst.id, application: appInst.name}, service)
                 return await this.db!.set('service', serviceInst)
             } else {
                 throw utils.unifyErrMesg('Can not create service without application setting', 'repository', 'service')
@@ -501,7 +500,7 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
                     for (let i = serviceInst.arguments.length - 1; i>=0; i--) {
                         const argStr = serviceInst.arguments[i]
                         const pair = argStr.split(',')
-                        serviceInst[i] = { name: pair[0], type: pair[1] }
+                        serviceInst.arguments[i] = { name: pair[0], type: pair[1] }
                     }
                 }
             }

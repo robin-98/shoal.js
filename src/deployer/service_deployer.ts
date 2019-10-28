@@ -37,9 +37,8 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
     const providerSettingsCache: Map<string, Sardines.ProviderDefinition> = new Map()
     for (let providerDefinition of deployPlan.providers) {
         // Get provider settings
-        let providerClass: any = null, providerName: string|null = null
-        if (providerDefinition.code && providerDefinition.code.name) {
-            providerName = providerDefinition.code.name
+        let providerClass: any = null, providerName: string = providerDefinition.name
+        if (providerDefinition.code && providerName) {
             if (!Factory.getClass(providerName)) {
                 providerClass = await Source.getPackageFromNpm(providerName, providerDefinition.code.locationType, verbose)
                 if (providerClass) {
@@ -71,6 +70,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
 
     // Begin to deploy applications
     const result: Sardines.Runtime.DeployResult = {}
+    const serviceRuntimeCache: {[key:string]:Sardines.Runtime.Service} = {}
 
     for (let app of deployPlan.applications) {
         let appName = app.name
@@ -122,6 +122,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     // returnType: service.returnType,
                     entries: []
                 }
+                serviceRuntimeCache[`${appName}:${service.module}:${service.name}:${appVersion}`] = serviceRuntime
                 // register handler on all provider instances
                 let providerNames = providerInstances.keys()
                 let name = providerNames.next()
@@ -194,12 +195,25 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
 
             if (app.init && app.init.length > 0) {
                 for (let serviceRuntimeSettings of app.init) {
-                    let service = serviceMap.get(serviceRuntimeSettings.service)!
+                    let serviceIdStr = ''
+                    if (typeof serviceRuntimeSettings.service === 'string') {
+                        serviceIdStr = serviceRuntimeSettings.service
+                    } else if (serviceRuntimeSettings.service && typeof serviceRuntimeSettings.service === 'object' 
+                    && (<{[key:string]:any}>serviceRuntimeSettings.service).name
+                    && (<{[key:string]:any}>serviceRuntimeSettings.service).module) {
+                        serviceIdStr = `${(<{[key:string]:any}>serviceRuntimeSettings.service).module}/${(<{[key:string]:any}>serviceRuntimeSettings.service).name}`
+                    }
+                    if (!serviceIdStr) continue
+                    let service = serviceMap.get(serviceIdStr)!
                     let sourceCodeFile = getSourceCodeFilePath(path.resolve(codeBaseDir, './' + service.filepath))
                     if (fs.existsSync(sourceCodeFile)) {
-                        let handler = require(sourceCodeFile)[service.name]
                         if (serviceRuntimeSettings.arguments) {
+                            const handler = require(sourceCodeFile)[service.name]
                             await handler(...serviceRuntimeSettings.arguments)
+                            const srInst = serviceRuntimeCache[`${appName}:${service.module}:${service.name}:${appVersion}`]
+                            if (srInst) {
+                                srInst.arguments = serviceRuntimeSettings.arguments
+                            }
                         }
                     }
                 }
