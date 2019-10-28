@@ -16,8 +16,8 @@
         "sardines-built-in-services": "*",
         "sardines-compile-time-tools": "*",
         "sardines-core": "*",
-        "sardines-service-driver-http": "^0.1.18",
-        "sardines-service-provider-http": "^0.2.13",
+        "sardines-service-driver-http": "^0.1.20",
+        "sardines-service-provider-http": "^0.2.14",
         "semver": "^6.3.0",
         "systeminformation": "^4.14.4",
         "typescript": "^3.5.3"
@@ -33,7 +33,7 @@
         "FaaS"
     ],
     "license": "ISC",
-    "main": "lib/deployServices.js",
+    "main": "lib/index.js",
     "name": "sardines-shoal",
     "repository": {
         "type": "git",
@@ -41,27 +41,27 @@
     },
     "scripts": {
         "genConfig": "./bin/gen_sardines_config.py --repo-deploy-file deploy-repository-dev.json --config-file ./sardines-config.json --application sardines --platform nodejs",
-        "genDefaultAgentDeployPlan": "./bin/deploy_host.py --repo-deploy-file ./deploy-repository-dev.json --only-gen-agent-deploy-plan True --agent-deploy-plan-file ./deploy-agent.json --use-repo-host-name True",
+        "genDefaultAgentDeployPlan": "./bin/deploy_host.py --repo-deploy-file ./deploy-repository-dev.json --only-gen-agent-deploy-plan True --agent-deploy-plan-file ./deploy-agent.json --agent-heartbeat-interval-sec 5",
         "init": "sardines-init --bypass-remote-services --config=./sardines-config.json",
-        "build": "npm run clear && npm run compileRepo && npm run compileAgent && npm run reverseCompile && npm run publishRepositoryInterfaces && tsc --build conf/tsconfig.json && npm run makeExec",
+        "build": "npm run clear && npm run compileAgent && npm run compileRepo && npm run reverseCompile && npm run publishRepositoryInterfaces && tsc --build conf/tsconfig.json && npm run makeExec",
         "clear": "rm -rf lib/*",
-        "clearPackages": " if [ -d ./node_modules/sardines-service-provider-http -o -d ./node_modules/sardines-service-driver-http ];then npm uninstall sardines-service-provider-http service-driver-http; fi",
+        "clearPackages": " if [ -d ./node_modules/sardines-service-provider-http -o -d ./node_modules/sardines-service-driver-http ];then npm uninstall --save sardines-service-provider-http sardines-service-driver-http; fi",
         "compileRepo": "file=sardines-services-repository.json; rm -f $file && sardines-compiler --application=sardines --recompile --verbose --gen-services=$file ./src/repository/index.ts",
         "compileAgent": "file=sardines-services-agent.json; rm -f $file && sardines-compiler --application=sardines --recompile --verbose --gen-services=$file ./src/agent/index.ts",
         "makeExec": "npm run makeExecRepo && npm run makeExecManRepo",
         "makeExecManRepo": "file=./lib/manager/manageRepository.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
-        "makeExecRepo": "file=./lib/deployServices.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
+        "makeExecRepo": "file=./lib/index.js; { echo '#!/usr/bin/env node'; cat $file; } > ${file}.tmp && mv ${file}.tmp $file && chmod a+x $file",
         "reverseCompile": "sardines-compiler --reverse ./src",
         "publishRepositoryInterfaces": "file=./bin/publish_repository_service_definitions_to_core_project.py; if [ -f $file ];then $file sardines-services-repository.json ../sardines.core.js/src/repository_services.ts; fi",
         "prepareStart": "npm run init && npm run build",
-        "startRepo": "npm run genConfig && npm run prepareStart && npm run genDefaultAgentDeployPlan && node lib/deployServices.js ./sardines-services-agent.json ./deploy-agent.json ./sardines-services-repository.json ./deploy-repository-dev.json",
-        "startAgent": "npm run prepareStart && node lib/deployServices.js ./sardines-services-agent.json ./deploy-agent.json",
+        "startRepo": "npm run genConfig && npm run prepareStart && npm run genDefaultAgentDeployPlan && node lib/index.js ./sardines-services-agent.json ./deploy-agent.json ./sardines-services-repository.json ./deploy-repository-dev.json",
+        "startAgent": "npm run prepareStart && node lib/index.js ./sardines-services-agent.json ./deploy-agent.json",
         "test": "npm run build && node lib/agent/host_perf.js test",
         "testDeployHost": "npm run build && ./bin/deploy_host.py --host-name nw-dev01 --os-user rin --repo-deploy-file deploy-repository-dev.json",
         "testDeployService": "./bin/deploy_service.py --application dietitian --providers ./test/providers-dietitian.json --init-parameters ./test/init-params-dietitian.json --repo-deploy-plan deploy-repository-dev.json",
-        "stop": "if [ `ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'; ps -ef|grep 'node lib/deployServices.js'|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; echo 'sardines stopped'; fi",
-        "prepublish": "npm run clearPackages && npm run build"
+        "stop": "if [ `ps -ef|grep 'node lib/index.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep 'node lib/index.js'|grep -v grep|grep -v 'npm run stop'; ps -ef|grep 'node lib/index.js'|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; echo 'sardines stopped'; fi",
+        "prepublish": "npm run clear && npm run clearPackages && npm run build"
     },
-    "type": "lib/deployServices.d.ts",
+    "type": "lib/index.d.ts",
     "version": "0.1.18"
 }

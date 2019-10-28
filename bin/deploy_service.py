@@ -74,7 +74,7 @@ else:
 
 # Invoke repository service to deploy services
 # need to invoke sardines-core from command line to invoke some services
-(host, entries, drivers) = readDeployPlan(args.repo_deploy_plan)
+(host, entries, drivers, repoProviders) = readDeployPlan(args.repo_deploy_plan)
 
 cmd = 'sardines-repository-client --cmd="deployServices"'
 cmd += " --drivers='" + json.dumps(drivers) + "'"

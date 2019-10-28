@@ -252,13 +252,14 @@ export class RepositoryDeployment extends RepositoryHeart {
         // TODO: push to target host
         // using sardines-core invoke to request
         deployPlanAndDescObjForHost.push({deployPlan, serviceDescObj})
-        res.push({hostInfo, deployPlan, serviceDescObj})
       }
       // find out what provider the agent is using
       const {provider_info, settings_for_provider, entry_type} = await this.db!.get('service_runtime', {
         resource_id: hostInfo.id,
         application: 'sardines',
-        module: '/agent'
+        module: '/agent',
+        name: 'deployService',
+        status: Sardines.Runtime.RuntimeStatus.ready
       }, null, 1, 0, ['provider_info', 'settings_for_provider', 'entry_type'])
       // send deploy plan and service description objects to the host using the particular provider
       try {
@@ -272,11 +273,14 @@ export class RepositoryDeployment extends RepositoryHeart {
             providerInfo: provider_info,
             settingsForProvider: settings_for_provider,
             type: entry_type
+          }],
+          arguments: [{
+            name: 'data',
+            type: 'any'
           }]
         }
-        const res = await Core.invoke(runtime, deployPlanAndDescObjForHost)
-        console.log('response from agent:')
-        utils.inspectedLog(res)
+        const agentResp = await Core.invoke(runtime, deployPlanAndDescObjForHost)
+        res.push({hostInfo, res: agentResp})
       } catch (e) {
         console.log('Error while requesting agent:')
         utils.inspectedLog(e)

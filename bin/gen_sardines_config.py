@@ -16,7 +16,7 @@ cmdlineArgs = argParser.parse_args()
 
 def genConfigFromRepoDeployPlan(args):
   # parse repo deploy plan
-  (host, entries, drivers) = readDeployPlan(args.repo_deploy_file)
+  (host, entries, drivers, repoProviders) = readDeployPlan(args.repo_deploy_file)
 
   config = {
     "application": args.application,

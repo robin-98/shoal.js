@@ -17,6 +17,19 @@
             "returnType": "any",
             "isAsync": true,
             "filepath": "/agent/index.ts"
+        },
+        {
+            "name": "deployService",
+            "module": "/agent",
+            "arguments": [
+                {
+                    "name": "data",
+                    "type": "ServiceDeployPlan[]"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/agent/index.ts"
         }
     ],
     "application": "sardines"

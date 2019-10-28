@@ -50,6 +50,12 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             let pvdrSettings = Object.assign({}, providerDefinition.providerSettings)
             if (pvdrSettings.public) delete pvdrSettings.public
             const fastKey = JSON.stringify(pvdrSettings)
+            // console.log('========================')
+            // console.log('providerName:', providerName)
+            // console.log('providerSettings:')
+            // utils.inspectedLog(providerDefinition.providerSettings)
+            // console.log('fastKey:', fastKey)
+            // console.log('========================')
             const providerInst = Factory.getInstance(providerName, providerDefinition.providerSettings, 'provider', fastKey)
             if (!providerInst) {
                 throw utils.unifyErrMesg(`failed to instance provider [${providerName}]`, 'deployer', 'provider')
@@ -152,7 +158,8 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     // register service on the provider instance
                     try {
                         const tmpService = utils.mergeObjects({}, service)
-                        await providerInst.registerService(appName, tmpService, handler, additionalServiceSettings)
+                        tmpService.application = appName
+                        await providerInst.registerService(tmpService, handler, additionalServiceSettings)
                         if (verbose) {
                             console.log(`service [${serviceId}] has been registered`)
                         }

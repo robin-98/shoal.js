@@ -22,12 +22,49 @@
                 "syslog": true,
                 "public": {
                     "protocol": "http",
-                    "host": "mba-robin",
+                    "host": "192.168.1.5",
                     "root": "/",
                     "port": 8080,
                     "driver": "sardines-service-driver-http"
                 }
-            }
+            },
+            "applicationSettings": [
+                {
+                    "application": "sardines",
+                    "commonSettings": {
+                        "root": "/"
+                    },
+                    "serviceSettings": [
+                        {
+                            "module": "/repository",
+                            "name": "signIn",
+                            "settings": {
+                                "method": "post"
+                            }
+                        },
+                        {
+                            "module": "/repository",
+                            "name": "signUp",
+                            "settings": {
+                                "method": "post"
+                            }
+                        },
+                        {
+                            "module": "/repository",
+                            "name": "signOut",
+                            "settings": {
+                                "arguments": [
+                                    {
+                                        "name": "token",
+                                        "position": "body"
+                                    }
+                                ],
+                                "method": "post"
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "applications": [
@@ -69,12 +106,49 @@
                                         "syslog": true,
                                         "public": {
                                             "protocol": "http",
-                                            "host": "mba-robin",
+                                            "host": "192.168.1.5",
                                             "root": "/",
                                             "port": 8080,
                                             "driver": "sardines-service-driver-http"
                                         }
-                                    }
+                                    },
+                                    "applicationSettings": [
+                                        {
+                                            "application": "sardines",
+                                            "commonSettings": {
+                                                "root": "/"
+                                            },
+                                            "serviceSettings": [
+                                                {
+                                                    "module": "/repository",
+                                                    "name": "signIn",
+                                                    "settings": {
+                                                        "method": "post"
+                                                    }
+                                                },
+                                                {
+                                                    "module": "/repository",
+                                                    "name": "signUp",
+                                                    "settings": {
+                                                        "method": "post"
+                                                    }
+                                                },
+                                                {
+                                                    "module": "/repository",
+                                                    "name": "signOut",
+                                                    "settings": {
+                                                        "arguments": [
+                                                            {
+                                                                "name": "token",
+                                                                "position": "body"
+                                                            }
+                                                        ],
+                                                        "method": "post"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         },

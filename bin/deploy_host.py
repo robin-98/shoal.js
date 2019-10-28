@@ -10,8 +10,8 @@ from lib.read_deploy_plan import readDeployPlan
 cwd = os.getcwd()
 argParser = argparse.ArgumentParser(description='Deploy the sardines shoal agent on a remote host via ssh')
 argParser.add_argument('--repo-deploy-file', type=str, required=True, help='The sardines repository used to manage the resource')
-argParser.add_argument('--host-name', type=str, required=False, default='local', help='Remote host name')
-argParser.add_argument('--use-repo-host-name', type=bool, required=False, default=False, help='used when deploying repository services on local machine, to use hostname in repo deploy plan')
+argParser.add_argument('--host-name', type=str, required=False, help='Remote host name')
+argParser.add_argument('--use-repo-providers', type=bool, required=False, default=False, help='used when deploying repository services on local machine, to use providers in repo deploy plan')
 argParser.add_argument('--os-user', type=str, required=False, help='OS user on the remote host')
 argParser.add_argument('--ipv4', type=str, required=False, help='IPv4 address of the remote host')
 argParser.add_argument('--ssh-port', type=int, required=False, help='SSH port of the remote host')
@@ -22,22 +22,24 @@ argParser.add_argument('--providers', type=str, required=False, default='sardine
 argParser.add_argument('--provider-settings', type=str, required=False, default='null', help='Provider settings for the providers, in JSON format, must be an array')
 argParser.add_argument('--only-gen-agent-deploy-plan', type=bool, required=False, default=False, help='Only generate deploy plan of agent on target host')
 argParser.add_argument('--agent-deploy-plan-file', type=str, required=False, default='./tmp-deploy-agent.json', help='Agent deploy plan file path')
-argParser.add_argument('--agent-heartbeat-interval-sec', type=int, required=False, default=5, help='Heartbeat interval in seconds')
+argParser.add_argument('--agent-heartbeat-interval-sec', type=int, required=False, default=58, help='Heartbeat interval in seconds')
 args = argParser.parse_args()
 
-(host, entries, drivers) = readDeployPlan(args.repo_deploy_file)
+(host, entries, drivers, repoProviders) = readDeployPlan(args.repo_deploy_file)
 
 target_addr = args.host_name
-if args.use_repo_host_name and host is not None and 'name' in host:
-  target_addr = host['name']
-ipaddr = None
-if target_addr == 'local':
-  target_addr = socket.gethostname()
 if not target_addr:
   target_addr = args.ipv4
 if not target_addr:
   target_addr = args.ipv6
+if not target_addr:
+  args.use_repo_providers = True
+  if host is not None and 'name' in host:
+    target_addr = host['name']
+if not target_addr:
+  target_addr = socket.gethostname()
 
+ipaddr = None
 if args.ipv4:
   ipaddr = args.ipv4
 # the following can work but is not stable
@@ -107,16 +109,19 @@ agent_deploy_plan = {
 }
 
 # prepare agent provider settings
-for i in range(0, len(providers)):
-  provider = providers[i]
-  settings = providerSettings[i]
-  agent_deploy_plan["providers"].append({
-    "name": provider,
-    "code": {
-        "locationType": "npm"
-    }, 
-    "providerSettings": settings
-  })
+if not args.use_repo_providers:
+  for i in range(0, len(providers)):
+    provider = providers[i]
+    settings = providerSettings[i]
+    agent_deploy_plan["providers"].append({
+      "name": provider,
+      "code": {
+          "locationType": "npm"
+      }, 
+      "providerSettings": settings
+    })
+else:
+  agent_deploy_plan["providers"] = repoProviders
 
 # Prepare host info
 if args.os_user is not None:

@@ -35,7 +35,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
   protected defaultLoadBalancingStrategy = Sardines.Runtime.LoadBalancingStrategy.evenWorkload
   protected workloadThreshold = 85
 
-  public async resourceHeartbeat(sysload: SystemLoad, token:string) {
+  public async resourceHeartbeat(data: {load: SystemLoad, providers: any}, token:string) {
+    let sysload = data.load
     let tokenObj = await this.validateToken(token, true)
     if (!this.shoalUser || !this.shoalUser.id 
       || !tokenObj || !tokenObj.account_id || tokenObj.account_id !== this.shoalUser.id) {
@@ -52,7 +53,12 @@ export class RepositoryRuntime extends RepositoryDeployment {
           last_active_on: Date.now()
         }
         await this.db!.set('resource', newStatus, {id: sysload.resource_id})
-        await this.db!.set('service_runtime', newStatus, {resource_id: sysload.resource_id})
+
+        if (data.providers && Array.isArray(data.providers) && data.providers.length > 0) {
+          for (let p of data.providers) {
+            await this.db!.set('service_runtime', newStatus, {resource_id: sysload.resource_id, provider_info: p})
+          }
+        }
       }
       return 'OK'
     }

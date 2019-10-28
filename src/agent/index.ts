@@ -7,6 +7,7 @@ export interface Resource extends Sardines.Runtime.Resource { }
 export let hasHostStatStarted = false
 export let hostPerf: SystemLoad|null = null
 export let hostId: string|null = null
+export let providers: any = null
 
 export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 1000) => {
   // Start heartbeat
@@ -20,10 +21,10 @@ export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 
       return
     }
     const load = await getCurrentLoad(hostInfo.name, hostInfo.account)
-    if (hostId && load) {
+    if (hostId && load && providers) {
       try {
         load.resource_id = hostId
-        const res = await RepositoryClient.exec('resourceHeartbeat', load)
+        const res = await RepositoryClient.exec('resourceHeartbeat', {load, providers})
         console.log('heartbeat res:', res)
       } catch(e) {
         console.log('ERROR while sending load data:', e)
@@ -50,13 +51,12 @@ export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 
 
     const tryToUpdateHostInfo = async() => {
       try {
-        console.log('sending host info to repo:', hostInfo)
         const res = await RepositoryClient.exec('updateResourceInfo', hostInfo)
         if (res && res.id) {
           hasHostInfoUpdated = true
           hostId = res.id
+          providers = res.providers.filter((p:any)=>p&&p.providerSettings&&p.providerSettings.public).map((p:any)=>(p.providerSettings.public))
         }
-        console.log('response of host info updating:', res)
       } catch(e) {
         utils.debugLog('ERROR while trying to update host info:', e)
       }
@@ -71,4 +71,13 @@ export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 
   await updateHostInfo()
 }
 
+export interface ServiceDeployPlan {
+  deployPlan: Sardines.DeployPlan
+  serviceDescObj: Sardines.ServiceDescriptionFile
+}
 
+export const deployService = async(data: ServiceDeployPlan[]) => {
+  console.log('received request from repository to deploy services')
+  utils.inspectedLog(data)
+  return 'agent received request for deploying services'
+}
