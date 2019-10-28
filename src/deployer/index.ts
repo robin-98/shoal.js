@@ -1,10 +1,14 @@
 import * as serviceDeployer from './service_deployer'
-import * as agent from '../agent'
 
 import { utils, Sardines } from 'sardines-core'
 import { RepositoryClient } from 'sardines-core'
 
-export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime.DeployResult|null|undefined) => {
+export interface AgentStatus {
+  hasHostStatStarted: boolean
+  hostId: string|null
+}
+
+export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime.DeployResult|null|undefined, agent: AgentStatus) => {
   if (!deployResult) {
       throw 'invalid deploy result of services'
   }
@@ -37,14 +41,19 @@ export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime
   // it's duplicated process with repo_client, so don't use inside invocation
 }
 
-export const deployServices = async (targetServices: any, deployPlan: any, send: boolean = true) => {
+export interface ServiceDeployment {
+  deployResult: any
+  repositoryResponse: any
+}
+
+export const deployServices = async (targetServices: any, deployPlan: any, agent: any = null): Promise<ServiceDeployment> => {
   if (!targetServices) {
       throw utils.unifyErrMesg('services are not correctly compiled', 'shoal', 'start')
   }
   const deployRes = await serviceDeployer.deploy(deployPlan, [targetServices], true)
   let repoRes = null
-  if (send) {
-      repoRes = await sendDeployResultToRepository(deployRes)
+  if (agent) {
+      repoRes = await sendDeployResultToRepository(deployRes, agent)
   }
   return {deployResult: deployRes, repositoryResponse: repoRes}
 }

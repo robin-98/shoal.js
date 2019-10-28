@@ -272,8 +272,11 @@ export class RepositoryRuntime extends RepositoryDeployment {
           // save service runtime in db
           try {
             const runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
-            const runtimeData = Object.assign({}, runtimeQuery)
-            runtimeData.status = Sardines.Runtime.RuntimeStatus.ready
+            const runtimeData = Object.assign({
+              last_active_on: Date.now(),
+              status: Sardines.Runtime.RuntimeStatus.ready
+            }, runtimeQuery)
+
             if (!runtimeInst) {
               await this.db!.set('service_runtime', runtimeData)
             } else {

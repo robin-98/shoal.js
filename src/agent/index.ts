@@ -1,6 +1,7 @@
 import { RepositoryClient, Sardines, utils } from 'sardines-core'
 import { getCurrentLoad } from './host_perf'
 import { SystemLoad } from '../interfaces/system_load'
+import * as deployer from '../deployer'
 
 export interface Resource extends Sardines.Runtime.Resource { }
 
@@ -77,7 +78,13 @@ export interface ServiceDeployPlan {
 }
 
 export const deployService = async(data: ServiceDeployPlan[]) => {
-  console.log('received request from repository to deploy services')
-  utils.inspectedLog(data)
-  return 'agent received request for deploying services'
+  if (!data || !Array.isArray(data) || !data.length) {
+    throw utils.unifyErrMesg(`Invalid service deployment command from repository`, 'agent', 'deploy service')
+  }
+  let result:any = []
+  for (let dp of data) {
+    let res: any = await deployer.deployServices(dp.serviceDescObj, dp.deployPlan, {hasHostStatStarted, hostId})
+    result.push(res)
+  }
+  return result
 }

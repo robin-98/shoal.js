@@ -13,6 +13,7 @@ import * as fs from 'fs'
 import { RepositoryClient } from 'sardines-core'
 import { parseDeployPlanFile } from './deployer/deployer_utils'
 import * as deployer from './deployer'
+import * as agent from './agent'
 
 // setup repository client
 const sardinesConfigFilepath = path.resolve(proc.cwd(), './sardines-config.json')
@@ -36,7 +37,7 @@ export const deployServicesByFiles = async (serviceDefinitionFile: string, servi
     if (fs.existsSync(serviceFilePath)) {
         const targetServices = JSON.parse(fs.readFileSync(serviceFilePath).toString())
         const deployPlan = parseDeployPlanFile(path.resolve(proc.cwd(), serviceDeployPlanFile))
-        const res = await deployer.deployServices(targetServices, deployPlan, send)
+        const res = await deployer.deployServices(targetServices, deployPlan, send?agent:null)
         if (res) return res
         else throw 'deploy failed'
     } else {
@@ -66,7 +67,7 @@ if (files && files.length >= 2 && files.length % 2 === 0) {
         
         // send deploy result
         for (let deployResult of serviceRuntimeQueue) {
-            const res = await deployer.sendDeployResultToRepository(deployResult.res)
+            const res = await deployer.sendDeployResultToRepository(deployResult.res, agent)
             console.log(`response of updateServiceRuntime for [${deployResult.deployPlanFile}]:`, res)
         }
     }
