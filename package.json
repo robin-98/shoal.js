@@ -16,9 +16,10 @@
         "sardines-built-in-services": "*",
         "sardines-compile-time-tools": "*",
         "sardines-core": "*",
-        "sardines-service-driver-http": "^0.1.20",
-        "sardines-service-provider-http": "^0.2.14",
+        "sardines-service-driver-http": "^0.1.21",
+        "sardines-service-provider-http": "^0.2.15",
         "semver": "^6.3.0",
+        "simple-git": "^1.126.0",
         "systeminformation": "^4.14.4",
         "typescript": "^3.5.3"
     },

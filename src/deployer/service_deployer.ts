@@ -77,7 +77,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
     // Begin to deploy applications
     const result: Sardines.Runtime.DeployResult = {}
     const serviceRuntimeCache: {[key:string]:Sardines.Runtime.Service} = {}
-
+    
     for (let app of deployPlan.applications) {
         let appName = app.name
         let codeBaseDir = null
@@ -88,8 +88,13 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         if (!serviceMap) continue
 
         // prepare the source code
+        // for local files
         if (app.code && app.code.locationType === Sardines.LocationType.file && app.code.location) {
             codeBaseDir = path.resolve(proc.cwd(), app.code.location)
+        } else if (app.code && app.code.locationType === Sardines.LocationType.git && app.code.location) {
+            // for git repository
+            // const localGitRoot = './tmp_sardines_git_root'
+
         }
 
         // Get the application version
@@ -98,7 +103,12 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
 
         // Begin to deploy services
         result[appName] = []
+        console.log('========================')
+        utils.inspectedLog(codeBaseDir )
+        utils.inspectedLog(app)
+        console.log('========================')
         if (codeBaseDir && fs.existsSync(codeBaseDir)) {
+            console.log('hehe')
             let keys = serviceMap.keys()
             let i = keys.next()
             while (!i.done) {
