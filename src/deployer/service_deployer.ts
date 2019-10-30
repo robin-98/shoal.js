@@ -8,13 +8,14 @@
 import * as path from 'path'
 import * as proc from 'process'
 
-import { utils, Sardines, Factory } from 'sardines-core'
+import { utils, Sardines, Factory, RepositoryClient } from 'sardines-core'
 import { Source } from 'sardines-compile-time-tools'
 
 import { getServiceDefinitionsMap } from './deployer_utils'
 import * as fs from 'fs';
 
 const {params} = utils.parseArgs()
+const localGitRoot = './tmp_sardines_git_root'
 
 const getSourceCodeFilePath = (filepath: string): string => {
     let extname = path.extname(filepath)
@@ -50,12 +51,6 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             let pvdrSettings = Object.assign({}, providerDefinition.providerSettings)
             if (pvdrSettings.public) delete pvdrSettings.public
             const fastKey = JSON.stringify(pvdrSettings)
-            // console.log('========================')
-            // console.log('providerName:', providerName)
-            // console.log('providerSettings:')
-            // utils.inspectedLog(providerDefinition.providerSettings)
-            // console.log('fastKey:', fastKey)
-            // console.log('========================')
             const providerInst = Factory.getInstance(providerName, providerDefinition.providerSettings, 'provider', fastKey)
             if (!providerInst) {
                 throw utils.unifyErrMesg(`failed to instance provider [${providerName}]`, 'deployer', 'provider')
@@ -71,6 +66,10 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
     const appMap = getServiceDefinitionsMap(serviceDefinitions)
     if (!appMap) {
         throw utils.unifyErrMesg(`Can not parse service definitions`, 'shoal', 'deploy')
+    }
+    for (let serviceDef of serviceDefinitions) {
+        const cache = Sardines.Transform.fromServiceDescriptionFileToServiceCache(serviceDef)
+        RepositoryClient.setLocalServices(cache)
     }
     const sourceFiles: Map<string,{[key: string]: any}> = new Map()
 
@@ -91,24 +90,22 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         // for local files
         if (app.code && app.code.locationType === Sardines.LocationType.file && app.code.location) {
             codeBaseDir = path.resolve(proc.cwd(), app.code.location)
-        } else if (app.code && app.code.locationType === Sardines.LocationType.git && app.code.location) {
+        } else if (app.version && app.version !== '*' && app.code 
+            && app.code.locationType === Sardines.LocationType.git
+            && app.code.location && app.code.url) {
             // for git repository
-            // const localGitRoot = './tmp_sardines_git_root'
-
+            const sourceCodeDir = await Source.getSourceFromGit(app.code.url, localGitRoot, {version: app.version, initWorkDir: true})
+            if (sourceCodeDir) codeBaseDir = path.resolve(`${sourceCodeDir}/`, app.code.location)
+        } else {
+            throw utils.unifyErrMesg(`unsupported source code information, can not deploy services for application [${app.name}]`, 'shoal', 'deployer')
         }
 
         // Get the application version
-        // TODO: use git parse current version
         const appVersion = app.version
 
         // Begin to deploy services
         result[appName] = []
-        console.log('========================')
-        utils.inspectedLog(codeBaseDir )
-        utils.inspectedLog(app)
-        console.log('========================')
         if (codeBaseDir && fs.existsSync(codeBaseDir)) {
-            console.log('hehe')
             let keys = serviceMap.keys()
             let i = keys.next()
             while (!i.done) {
@@ -121,10 +118,15 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                 if (!fs.existsSync(serviceCodeFile)) {
                     throw utils.unifyErrMesg(`Can not find source code file for service [${serviceId}] at [${serviceCodeFile}]`, 'shoal', 'deploy')
                 }
-                if (!sourceFiles.has(serviceCodeFile)) sourceFiles.set(serviceCodeFile, require(serviceCodeFile))
+                if (!sourceFiles.has(serviceCodeFile)) {
+                    if (require.cache[require.resolve(serviceCodeFile)]) {
+                        delete require.cache[require.resolve(serviceCodeFile)]
+                    }
+                    sourceFiles.set(serviceCodeFile, require(serviceCodeFile))
+                }
                 const handler = sourceFiles!.get(serviceCodeFile)![service.name]
                 if (!handler) {
-                    throw utils.unifyErrMesg(`Can not get handler from source code file for service [${serviceId}]`, 'shoal', 'deploy')
+                    throw utils.unifyErrMesg(`Can not get handler from source code file [${serviceCodeFile}] for service [${serviceId}]`, 'shoal', 'deploy')
                 }
                 // prepare to register service
                 const serviceRuntime: Sardines.Runtime.Service = {

@@ -169,6 +169,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
           if (app !== 'sardines') {
             throw `Unregistered application [${app}] is not allowed to register service runtime`
           }
+        } else if (appId.id) {
+          appId = appId.id
         }
       } catch (e) {
         console.error(`ERROR while querying application id application ${app}`, e)
@@ -183,7 +185,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
         if (!runtime || !runtime.identity || !runtime.entries || !Array.isArray(runtime.entries)) continue
         const identity = runtime.identity
         if (appId) identity.application_id = appId
-        else identity.application = app
+        identity.application = app
         if (!identity.module || !identity.name || !identity.version) continue
         if (identity.version === '*') {
           // query latest version for the service
@@ -195,6 +197,9 @@ export class RepositoryRuntime extends RepositoryDeployment {
             } else if (serviceInfo) {
               identity.version = serviceInfo.version
               identity.service_id = serviceInfo.id
+              if (!identity.application_id && serviceInfo.application_id) {
+                identity.application_id = serviceInfo.application_id
+              }
             }
           } catch (e) {
             console.error(`ERROR while querying service version for service runtime ${identity.application}:${identity.module}:${identity.name}`,e)
@@ -237,6 +242,9 @@ export class RepositoryRuntime extends RepositoryDeployment {
               const serviceInfo = <Service>await this.queryService(identity, token, true)
               if (serviceInfo) {
                 identity.service_id = serviceInfo.id 
+                if (serviceInfo.application_id && !identity.application_id) {
+                  identity.application_id = serviceInfo.application_id
+                }
               }
             } catch (e) {
               console.error(`Error while querying service info for service ${app}:${identity.module}:${identity.name}`, e)
@@ -284,6 +292,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
             }
           } catch(e) {
             console.error(`Error while saving runtime for service ${app}:${identity.module}:${identity.name}`, e)
+            // Todo: return error for particular service runtime
           }
         }
       }
