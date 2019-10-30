@@ -28,7 +28,7 @@ const getSourceCodeFilePath = (filepath: string): string => {
 // serviceDefinitions: array of service definition file content, each for an application or part of an application
 // start or get an instance from factory of the provider
 // Register services on the specified provider
-export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions: any[], verbose: boolean = false) => {
+export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions: any[], providerCache: Sardines.Runtime.ProviderCache, verbose: boolean = false) => {
     if (!serviceDefinitions || !Array.isArray(serviceDefinitions) || !deployPlan.applications || !Array.isArray(deployPlan.applications)) {
         console.error(`No service is setup to deploy`)
         return
@@ -119,9 +119,9 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     throw utils.unifyErrMesg(`Can not find source code file for service [${serviceId}] at [${serviceCodeFile}]`, 'shoal', 'deploy')
                 }
                 if (!sourceFiles.has(serviceCodeFile)) {
-                    if (require.cache[require.resolve(serviceCodeFile)]) {
-                        delete require.cache[require.resolve(serviceCodeFile)]
-                    }
+                    // if (appName !== 'sardines' && require.cache[require.resolve(serviceCodeFile)]) {
+                    //     delete require.cache[require.resolve(serviceCodeFile)]
+                    // }
                     sourceFiles.set(serviceCodeFile, require(serviceCodeFile))
                 }
                 const handler = sourceFiles!.get(serviceCodeFile)![service.name]
@@ -171,10 +171,14 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     try {
                         const tmpService = utils.mergeObjects({}, service)
                         tmpService.application = appName
+                        tmpService.version = appVersion
                         await providerInst.registerService(tmpService, handler, additionalServiceSettings)
                         if (verbose) {
                             console.log(`service [${serviceId}] has been registered`)
                         }
+                        const providerInfo = providerSettings!.providerSettings.public
+                        const pvdrkey = utils.getKey(providerInfo)
+                        Sardines.Transform.pushServiceIntoProviderCache(providerCache, pvdrkey, providerInfo, tmpService)
                         // after registeration, service data structure will be changed:
                         // the arguments will have additional properties
                         // such as 'position' property for http provider
@@ -227,7 +231,8 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     let sourceCodeFile = getSourceCodeFilePath(path.resolve(codeBaseDir, './' + service.filepath))
                     if (fs.existsSync(sourceCodeFile)) {
                         if (serviceRuntimeSettings.arguments) {
-                            const handler = require(sourceCodeFile)[service.name]
+                            // const handler = require(sourceCodeFile)[service.name]
+                            const handler = sourceFiles.get(sourceCodeFile)![service.name]
                             await handler(...serviceRuntimeSettings.arguments)
                             const srInst = serviceRuntimeCache[`${appName}:${service.module}:${service.name}:${appVersion}`]
                             if (srInst) {

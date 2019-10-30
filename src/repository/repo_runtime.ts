@@ -35,7 +35,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
   protected defaultLoadBalancingStrategy = Sardines.Runtime.LoadBalancingStrategy.evenWorkload
   protected workloadThreshold = 85
 
-  public async resourceHeartbeat(data: {load: SystemLoad, providers: any}, token:string) {
+  public async resourceHeartbeat(data: {load: SystemLoad, runtimes: string[]}, token:string) {
     let sysload = data.load
     let tokenObj = await this.validateToken(token, true)
     if (!this.shoalUser || !this.shoalUser.id 
@@ -54,10 +54,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
         }
         await this.db!.set('resource', newStatus, {id: sysload.resource_id})
 
-        if (data.providers && Array.isArray(data.providers) && data.providers.length > 0) {
-          for (let p of data.providers) {
-            await this.db!.set('service_runtime', newStatus, {resource_id: sysload.resource_id, provider_info: p})
-          }
+        if (data.runtimes && Array.isArray(data.runtimes) && data.runtimes.length) {
+          await this.db!.set('service_runtime', newStatus, {id: data.runtimes})
         }
       }
       return 'OK'
@@ -146,16 +144,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
     return null
   }
 
-  async updateServiceRuntime(runtimeOfApps: any, token: string, bypassToken: boolean = false) {
-    if (!bypassToken) await this.validateToken(token, true)
-
-    if (!runtimeOfApps || !runtimeOfApps.deployResult) {
-      throw utils.unifyErrMesg('invalid service runtime', 'repository', 'update service runtime')
-    }
-    if (!runtimeOfApps.resourceId) {
-      throw utils.unifyErrMesg('resourceId is missing in service runtime', 'repository', 'update service runtime')
-    }
-    let resourceId:string = runtimeOfApps.resourceId
+  async parseDeployResult(runtimeOfApps: any) {
     const cacheApps: {[key: string]: any} = {}
     for (let app of Object.keys(runtimeOfApps.deployResult)) {
       let cacheEntries : {[key: string]: any} = {}
@@ -209,7 +198,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
         
         for (let entry of runtime.entries) {
           if (!entry.providerInfo || !entry.providerInfo.driver || !entry.providerInfo.protocol) continue
-          const pvdrKey = `${entry.type}|${entry.providerName}|${JSON.stringify(entry.providerInfo)}`
+          const pvdrKey = utils.getKey(entry.providerInfo)
           if (!cacheEntries[pvdrKey]) cacheEntries[pvdrKey] = {
             entry: {
               type: entry.type,
@@ -228,10 +217,29 @@ export class RepositoryRuntime extends RepositoryDeployment {
         }
       }
     }
+    return cacheApps
+  }
+
+  async updateServiceRuntime(runtimeOfApps: any, token: string, bypassToken: boolean = false):Promise<Sardines.Runtime.ServiceRuntimeUpdateResult> {
+    if (!bypassToken) await this.validateToken(token, true)
+
+    if (!runtimeOfApps || !runtimeOfApps.deployResult) {
+      throw utils.unifyErrMesg('invalid service runtime', 'repository', 'update service runtime')
+    }
+    if (!runtimeOfApps.resourceId) {
+      throw utils.unifyErrMesg('resourceId is missing in service runtime', 'repository', 'update service runtime')
+    }
+    let resourceId:string = runtimeOfApps.resourceId
+    
+    const cacheApps = await this.parseDeployResult(runtimeOfApps)
+    // Save service runtime into database by apps and entries
+    const result: Sardines.Runtime.ServiceRuntimeUpdateResult = {}
     for (let app in cacheApps) {
+      result[app] = {}
       for (let pvdrKey in cacheApps[app]) {
         const entry = cacheApps[app][pvdrKey].entry
         const services = cacheApps[app][pvdrKey].services
+        result[app][pvdrKey] = []
         for (let service of services) {
           const identity = service.identity
           const settingsForProvider = service.settingsForProvider
@@ -263,13 +271,16 @@ export class RepositoryRuntime extends RepositoryDeployment {
           for (let prop of [
             {p:'providerName', db:'provider_name'},
             {p:'providerInfo', db:'provider_info'},
-            {p:'settingsForProvider', db:'settings_for_provider'},
             {p:'type', db:'entry_type'},
-            {p:'arguments', db:'init_params'}
           ]) {
             if (typeof runtimeQuery[prop.p] === 'undefined') continue
             runtimeQuery[prop.db] = runtimeQuery[prop.p]
             delete runtimeQuery[prop.p]
+          }
+          // Remove useless properties
+          // These properties could have deep objects, which may get null when querying
+          for (let prop of ['arguments', 'settingsForProvider']) {
+            if (runtimeQuery[prop]) delete runtimeQuery[prop]
           }
           // remove undefined properties
           for (let prop in runtimeQuery) {
@@ -279,7 +290,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
           }
           // save service runtime in db
           try {
-            const runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
+            let runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
             const runtimeData = Object.assign({
               last_active_on: Date.now(),
               status: Sardines.Runtime.RuntimeStatus.ready
@@ -287,8 +298,23 @@ export class RepositoryRuntime extends RepositoryDeployment {
 
             if (!runtimeInst) {
               await this.db!.set('service_runtime', runtimeData)
+              runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
             } else {
               await this.db!.set('service_runtime', runtimeData, runtimeQuery)
+            }
+            if (Array.isArray(runtimeInst)) {
+              runtimeInst = runtimeInst[0]
+            }
+            if (!runtimeInst) {
+              console.error('ERROR: can not find or create a new service runtime for service:', runtimeQuery)
+            } else {
+              result[app][pvdrKey].push({
+                application: runtimeQuery.application,
+                module: runtimeQuery.module,
+                name: runtimeQuery.name,
+                version: runtimeQuery.version,
+                runtimeId: runtimeInst.id
+              })
             }
           } catch(e) {
             console.error(`Error while saving runtime for service ${app}:${identity.module}:${identity.name}`, e)
@@ -297,6 +323,6 @@ export class RepositoryRuntime extends RepositoryDeployment {
         }
       }
     }
-    return 'OK'
+    return result
   }
 }

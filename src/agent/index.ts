@@ -5,27 +5,42 @@ import * as deployer from '../deployer'
 
 export interface Resource extends Sardines.Runtime.Resource { }
 
-export let hasHostStatStarted = false
-export let hostPerf: SystemLoad|null = null
-export let hostId: string|null = null
-export let providers: any = null
+export interface AgentStat {
+  hasHostStatStarted: boolean
+  hasHostInfoUpdated: boolean
+  providers: Sardines.Runtime.ProviderCache
+  hostId: string|null
+  perf: SystemLoad|null
+}
+
+export const agentStat:AgentStat = {
+  hasHostStatStarted: false,
+  hasHostInfoUpdated: false,
+  providers: {},
+  hostId: '',
+  perf: null,
+}
 
 export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 1000) => {
   // Start heartbeat
   const heartbeat = async() => {
-    if (!hasHostStatStarted) {
-      hostPerf = await getCurrentLoad(hostInfo.name, hostInfo.account)
-      hasHostStatStarted = true
+    if (!agentStat.hasHostStatStarted) {
+      agentStat.perf = await getCurrentLoad(hostInfo.name, hostInfo.account)
+      agentStat.hasHostStatStarted = true
       setTimeout(async()=> {
         await heartbeat()
       }, heartbeatInterval)
       return
     }
     const load = await getCurrentLoad(hostInfo.name, hostInfo.account)
-    if (hostId && load && providers) {
+    if (agentStat.hostId && load) {
       try {
-        load.resource_id = hostId
-        const res = await RepositoryClient.exec('resourceHeartbeat', {load, providers})
+        load.resource_id = agentStat.hostId
+        const serviceRuntimeList: string[] = []
+        for (let pvdrkey in agentStat.providers) {
+          Array.prototype.push.apply(serviceRuntimeList, agentStat.providers[pvdrkey].serviceRuntimeIds)
+        }
+        const res = await RepositoryClient.exec('resourceHeartbeat', {load, runtimes: serviceRuntimeList})
         console.log('heartbeat res:', res)
       } catch(e) {
         console.log('ERROR while sending load data:', e)
@@ -39,29 +54,29 @@ export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 
   await heartbeat()
 
   // Update host/resource infomation/settings
-  let hasHostInfoUpdated = false
   const updateHostInfo = async() => {
-    if (hostPerf && hostPerf.cpu && hostPerf.cpu.count) {
-      hostInfo.cpu_cores = hostPerf.cpu.count
+    if (agentStat.perf && agentStat.perf.cpu && agentStat.perf.cpu.count) {
+      hostInfo.cpu_cores = agentStat.perf.cpu.count
     }
-    if (hostPerf && hostPerf.mem && hostPerf.mem.total) {
-      hostInfo.mem_megabytes = hostPerf.mem.total
+    if (agentStat.perf && agentStat.perf.mem && agentStat.perf.mem.total) {
+      hostInfo.mem_megabytes = agentStat.perf.mem.total
     }
     hostInfo.status = Sardines.Runtime.RuntimeStatus.ready
     hostInfo.type = Sardines.Runtime.ResourceType.host
 
     const tryToUpdateHostInfo = async() => {
       try {
+
         const res = await RepositoryClient.exec('updateResourceInfo', hostInfo)
         if (res && res.id) {
-          hasHostInfoUpdated = true
-          hostId = res.id
-          providers = res.providers.filter((p:any)=>p&&p.providerSettings&&p.providerSettings.public).map((p:any)=>(p.providerSettings.public))
+          agentStat.hasHostInfoUpdated = true
+          agentStat.hostId = res.id
         }
       } catch(e) {
-        utils.debugLog('ERROR while trying to update host info:', e)
+        console.error('ERROR while trying to update host info:')
+        utils.inspectedLog(e)
       }
-      if (!hasHostInfoUpdated) {
+      if (!agentStat.hasHostInfoUpdated) {
         setTimeout(async() => {
           await tryToUpdateHostInfo()
         }, heartbeatInterval)
@@ -83,7 +98,7 @@ export const deployService = async(data: ServiceDeployPlan[]) => {
   }
   let result:any = []
   for (let dp of data) {
-    let res: any = await deployer.deployServices(dp.serviceDescObj, dp.deployPlan, {hasHostStatStarted, hostId})
+    let res: any = await deployer.deployServices(dp.serviceDescObj, dp.deployPlan, agentStat, true)
     result.push(res)
   }
   return result
