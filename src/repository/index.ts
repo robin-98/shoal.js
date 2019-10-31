@@ -114,7 +114,7 @@ export const resourceHeartbeat = async(data: any, token: string) => {
 export const updateResourceInfo = async(data: any, token: string) => {
     if (!data) throw unifyErrMesg('invalid data', 'repository', 'updateResourceInfo')
     checkRepoStatus()
-    return await unifyAsyncHandler('repository', 'update resource info', repoInst!.createOrUpdateResourceInfo, repoInst)(data, token)
+    return await unifyAsyncHandler('repository', 'update resource info', repoInst!.updateResourceInfo, repoInst)(data, token)
 }
 
 export const deployServices = async(data: any, token: string) => {
@@ -123,8 +123,8 @@ export const deployServices = async(data: any, token: string) => {
     return await unifyAsyncHandler('repository', 'deploy services', repoInst!.deployServices, repoInst)(data, token) 
 }
 
-export const updateServiceRuntime = async(data: any, token: string) => {
-    if (!data) throw unifyErrMesg('invalid data', 'repository', 'updateServiceRuntime')
+export const uploadServiceDeployResult = async(data: any, token: string) => {
+    if (!data) throw unifyErrMesg('invalid data', 'repository', 'uploadServiceDeployResult')
     checkRepoStatus()
-    return await unifyAsyncHandler('repository', 'update service runtime', repoInst!.updateServiceRuntime, repoInst)(data, token) 
+    return await unifyAsyncHandler('repository', 'upload service deployment result', repoInst!.uploadServiceDeployResult, repoInst)(data, token) 
 }

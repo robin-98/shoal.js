@@ -1,10 +1,16 @@
 import { RepositoryDataStructure } from './repo_data_structure'
-
+import { Sardines } from 'sardines-core'
+import { SystemLoad } from '../interfaces/system_load'
+const calcWorkload = (sysload: SystemLoad):number => {
+  let load = 100
+  load -= sysload.cpu.idle
+  return Math.round(load)
+}
 export class RepositoryHeart extends RepositoryDataStructure {
   [key:string]: any
   private intervalHeartbeat: any = null
-  private heartbeatTimespan: number = 1 * 1000
-  private heartbeatCount: number = 0
+  protected heartbeatTimespan: number = 1 * 1000
+  protected heartbeatCount: number = 0
   protected jobsInHeart: {[name: string]:{ 
     name: string 
     intervalCounts: number 
@@ -14,6 +20,9 @@ export class RepositoryHeart extends RepositoryDataStructure {
     super()
     if (typeof this.removeOutDatePerfData === 'function') {
       this.appendJobInHeart('removeOutDatePerfData')
+    }
+    if (typeof this.checkPendingServices === 'function') {
+      this.appendJobInHeart('checkPendingServices', 1, 10)
     }
     this.startHeart()
   }
@@ -64,5 +73,53 @@ export class RepositoryHeart extends RepositoryDataStructure {
     await this.db!.set('token', null, {
       expire_on: `lt:${Date.now()}`
     })
+  }
+
+  public async resourceHeartbeat(data: {load: SystemLoad, runtimes: string[]}, token:string) {
+    let sysload = data.load
+    let tokenObj = await this.validateToken(token, true)
+    if (!this.shoalUser || !this.shoalUser.id 
+      || !tokenObj || !tokenObj.account_id || tokenObj.account_id !== this.shoalUser.id) {
+      throw 'Unauthorized user'
+    }
+
+    const resourcePerf = await this.db!.set('resource_performance', sysload)
+    if (resourcePerf) {
+      if (sysload.resource_id) {
+        const workload = calcWorkload(sysload)
+        const newStatus = {
+          workload_percentage: workload,
+          status: Sardines.Runtime.RuntimeStatus.ready,
+          last_active_on: Date.now()
+        }
+        await this.db!.set('resource', newStatus, {id: sysload.resource_id})
+
+        if (data.runtimes && Array.isArray(data.runtimes) && data.runtimes.length) {
+          await this.db!.set('service_runtime', newStatus, {id: data.runtimes})
+        }
+      }
+      return 'OK'
+    }
+    return null
+  }
+
+  private async checkPendingServices() {
+    try {
+      let resourcelist = await this.db!.get('resource', {
+        status: Sardines.Runtime.RuntimeStatus.ready
+      }, null, 0)
+      if (!resourcelist) return 
+      if (resourcelist && !Array.isArray(resourcelist)) resourcelist = [resourcelist]
+      const self = this
+      for (let resource of resourcelist) {
+        setTimeout(async() => {
+          if (typeof self['reloadPendingServices'] === 'function') {
+            await self.reloadPendingServices(resource)
+          }
+        }, 0)
+      }
+    } catch (e) {
+      console.error(`Error while checking pending services:`, e)
+    }
   }
 }

@@ -80,6 +80,7 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         workload_percentage: 'SMALLINT DEFAULT 100',     // when service is ready, it will update this value by itself to open for serving requests
         service_id: 'UUID', // can only be null for sardines repository services
         entry_type: 'VARCHAR(20)',
+        provider_raw: 'JSONB',
         provider_name: 'VARCHAR(100)',
         provider_info: 'JSONB',
         settings_for_provider: 'JSONB',

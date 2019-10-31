@@ -26,6 +26,33 @@ export interface ServiceDeploymentTargets {
   initParams?: any[]
 }
 
+export interface ExtendedServiceIdentity extends Sardines.ServiceIdentity {
+  application_id?: string
+  service_id?: string
+}
+
+export interface DeployResultCacheItem {
+  entry: {
+    type: Sardines.Runtime.ServiceEntryType
+    providerName: string
+    providerInfo: Sardines.ProviderPublicInfo
+    // provider: Sardines.ProviderDefinition
+  },
+  services: {
+    identity: ExtendedServiceIdentity
+    settingsForProvider: Sardines.ServiceSettingsForProvider
+    arguments?: Sardines.ServiceArgument[]
+  }[]
+}
+
+export interface DeployResultCache {
+  [appName: string]: {
+    [pvdrkey: string]: DeployResultCacheItem
+  }
+}
+
+export interface ProviderCache {[pvdrkey: string]: Sardines.ProviderDefinition}
+
 export class RepositoryDeployment extends RepositoryHeart {
   constructor() {
     super()
@@ -38,8 +65,16 @@ export class RepositoryDeployment extends RepositoryHeart {
       throw 'Unauthorized user'
     }
   }
-  public async createOrUpdateResourceInfo(resourceInfo: Sardines.Runtime.Resource, token: string) {
+
+  public async updateResourceInfo(resourceInfo: Sardines.Runtime.Resource, token: string) {
     await this.validateShoalUser(token)
+    const resourceInDB = await this.createOrUpdateResourceInfo(resourceInfo)
+
+    // return 
+    return resourceInDB
+  }
+
+  protected async createOrUpdateResourceInfo(resourceInfo: Sardines.Runtime.Resource) {
     if (resourceInfo.address && Object.keys(resourceInfo.address).length === 0) {
       delete resourceInfo.address
     }
@@ -114,8 +149,9 @@ export class RepositoryDeployment extends RepositoryHeart {
     else return null
   }
 
-  public async deployServices(targets: ServiceDeploymentTargets, token: string) {
-    await this.validateShoalUser(token)
+  public async deployServices(targets: ServiceDeploymentTargets, token: string, bypassToken: boolean = false) {
+    if (!bypassToken) await this.validateShoalUser(token)
+    
     const hosts = targets.hosts
     const application = targets.application
     const services = targets.services 
@@ -289,5 +325,287 @@ export class RepositoryDeployment extends RepositoryHeart {
 
     if (!res.length) return null
     else return res
+  }
+
+  async parseDeployResult(runtimeOfApps: Sardines.Runtime.DeployResult):Promise<{deployResult: DeployResultCache, providers: ProviderCache}> {
+    const cacheApps: DeployResultCache = {}
+    const pvdrCache: {[pvdrkey: string]: Sardines.ProviderDefinition} = {}
+    for (let pvdr of runtimeOfApps.providers) {
+      // remove redundant data: service settings for provider
+      if (pvdr.applicationSettings) {
+        for (let appSetting of pvdr.applicationSettings) {
+          if (appSetting.serviceSettings) delete appSetting.serviceSettings
+        }
+      }
+      pvdrCache[utils.getKey(pvdr.providerSettings.public)] = pvdr
+    }
+    for (let app of Object.keys(runtimeOfApps.services)) {
+      let cacheEntries : {[pvdrkey: string]: DeployResultCacheItem} = {}
+      cacheApps[app] = cacheEntries
+      let serviceRuntime = runtimeOfApps.services[app]
+      // query appId
+      let appId = null
+      try {
+        appId = await this.db!.get('application', {name: app})
+        if (!appId) {
+          if (app !== 'sardines') {
+            throw `Unregistered application [${app}] is not allowed to register service runtime`
+          }
+        } else if (appId.id) {
+          appId = appId.id
+        }
+      } catch (e) {
+        console.error(`ERROR while querying application id application ${app}`, e)
+        continue
+      }
+      
+      if (!serviceRuntime || !serviceRuntime.length) {
+        console.error(`ERROR: can not log empty service runtime for application [${app}]`)
+        continue
+      }
+      for (let runtime of serviceRuntime) {
+        if (!runtime || !runtime.identity || !runtime.entries || !Array.isArray(runtime.entries)) continue
+        const identity: ExtendedServiceIdentity = runtime.identity
+        if (appId) identity.application_id = appId
+        identity.application = app
+        if (!identity.module || !identity.name || !identity.version) continue
+        if (identity.version === '*') {
+          // query latest version for the service
+          try {
+            const serviceInfo = await this.db!.get('service', identity, {create_on: -1}, 1)
+            if (!serviceInfo && app !== 'sardines') {
+              console.error(`logging runtime for unregistered service ${app}:${identity.module}:${identity.name}`)
+              throw `unregistered service is not allowed to register service runtime`
+            } else if (serviceInfo) {
+              identity.version = serviceInfo.version
+              identity.service_id = serviceInfo.id
+              if (!identity.application_id && serviceInfo.application_id) {
+                identity.application_id = serviceInfo.application_id
+              }
+            }
+          } catch (e) {
+            console.error(`ERROR while querying service version for service runtime ${identity.application}:${identity.module}:${identity.name}`,e)
+            continue
+          }
+        }
+        
+        for (let entry of runtime.entries) {
+          if (!entry.providerInfo || !entry.providerInfo.driver || !entry.providerInfo.protocol) continue
+          const pvdrKey = utils.getKey(entry.providerInfo)
+          if (!cacheEntries[pvdrKey]) cacheEntries[pvdrKey] = {
+            entry: {
+              type: entry.type,
+              providerName: entry.providerName||'unknown',
+              providerInfo: entry.providerInfo,
+            },
+            services: []
+          }
+          const rtInst: any = {identity, settingsForProvider: entry.settingsForProvider}
+          if (runtime.arguments) {
+            rtInst.arguments = runtime.arguments
+          }
+          const cache = cacheEntries[pvdrKey]
+          cache.services.push(rtInst)
+        }
+      }
+    }
+    return {deployResult: cacheApps, providers: pvdrCache}
+  }
+
+  async uploadServiceDeployResult(runtimeOfApps: Sardines.Runtime.DeployResult, token: string, bypassToken: boolean = false):Promise<Sardines.Runtime.ServiceRuntimeUpdateResult> {
+    if (!bypassToken) await this.validateToken(token, true)
+
+    if (!runtimeOfApps || !runtimeOfApps.resourceId || !runtimeOfApps.providers || !runtimeOfApps.services) {
+      throw utils.unifyErrMesg('invalid deploy result', 'repository', 'update service runtime')
+    }
+    if (!runtimeOfApps.resourceId) {
+      throw utils.unifyErrMesg('resourceId is missing in service runtime', 'repository', 'update service runtime')
+    }
+    let resourceId:string = runtimeOfApps.resourceId
+    
+    const dpres = await this.parseDeployResult(runtimeOfApps)
+    const cacheApps = dpres.deployResult
+    const cachePvdr = dpres.providers
+    // Save service runtime into database by apps and entries
+    const result: Sardines.Runtime.ServiceRuntimeUpdateResult = {}
+    for (let app in cacheApps) {
+      result[app] = {}
+      for (let pvdrKey in cacheApps[app]) {
+        const entry = cacheApps[app][pvdrKey].entry
+        const services = cacheApps[app][pvdrKey].services
+        result[app][pvdrKey] = []
+        for (let service of services) {
+          const identity = service.identity
+          const settingsForProvider = service.settingsForProvider
+          const serviceArguments = service.arguments
+          if (!identity.service_id && app !== 'sardines') {
+            // query service
+            try {
+              const serviceInfo = <Service>await this.queryService(identity, token, true)
+              if (serviceInfo) {
+                identity.service_id = serviceInfo.id 
+                if (serviceInfo.application_id && !identity.application_id) {
+                  identity.application_id = serviceInfo.application_id
+                }
+              }
+            } catch (e) {
+              console.error(`Error while querying service info for service ${app}:${identity.module}:${identity.name}`, e)
+              continue
+            }
+          }
+          // prepare service runtime data in db
+          const runtimeQuery: any = Object.assign({
+            resource_id: resourceId
+          }, identity, entry)
+
+          // convert properties to db columns
+          for (let prop of [
+            {p:'providerName', db:'provider_name'},
+            {p:'providerInfo', db:'provider_info'},
+            {p:'type', db:'entry_type'},
+          ]) {
+            if (typeof runtimeQuery[prop.p] === 'undefined') continue
+            runtimeQuery[prop.db] = runtimeQuery[prop.p]
+            delete runtimeQuery[prop.p]
+          }
+          
+          // remove undefined properties
+          for (let prop in runtimeQuery) {
+            if (typeof runtimeQuery[prop] === 'undefined') {
+              delete runtimeQuery[prop]
+            }
+          }
+          const runtimeData = Object.assign({
+            last_active_on: Date.now(),
+            status: Sardines.Runtime.RuntimeStatus.ready,
+            provider_raw: cachePvdr[pvdrKey],
+          }, runtimeQuery)
+          if (serviceArguments && identity.application !== 'sardines') {
+            runtimeData.init_params = serviceArguments
+          }
+          if (settingsForProvider) {
+            runtimeData.settings_for_provider = settingsForProvider
+          }
+          // save service runtime in db
+          try {
+            let runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
+
+            if (!runtimeInst) {
+              await this.db!.set('service_runtime', runtimeData)
+              runtimeInst = await this.db!.get('service_runtime', runtimeQuery)
+            } else {
+              await this.db!.set('service_runtime', runtimeData, runtimeQuery)
+            }
+            if (Array.isArray(runtimeInst)) {
+              runtimeInst = runtimeInst[0]
+            }
+            if (!runtimeInst) {
+              console.error('ERROR: can not find or create a new service runtime for service:', runtimeQuery)
+            } else {
+              result[app][pvdrKey].push({
+                application: runtimeQuery.application,
+                module: runtimeQuery.module,
+                name: runtimeQuery.name,
+                version: runtimeQuery.version,
+                runtimeId: runtimeInst.id
+              })
+            }
+          } catch(e) {
+            console.error(`Error while saving runtime for service ${app}:${identity.module}:${identity.name}`, e)
+            // Todo: return error for particular service runtime
+          }
+        }
+      }
+    }
+    return result
+  }
+
+  async reloadPendingServices(resourceInDB: any) {
+    if (!resourceInDB || !resourceInDB.id) return
+    // Then get all service runtimes which were deployed on this host, except sardines services
+    const pendingServiceRuntimes = await this.db!.get('service_runtime', {
+      resource_id: resourceInDB.id,
+      status: `ne:${Sardines.Runtime.RuntimeStatus.ready}`,
+      application: 'ne:sardines'
+    })
+
+    let targetServiceRuntimeList: any[]= []
+    if (pendingServiceRuntimes && !Array.isArray(pendingServiceRuntimes)) {
+      targetServiceRuntimeList = [pendingServiceRuntimes]
+    } else if (pendingServiceRuntimes && Array.isArray(pendingServiceRuntimes)) {
+      targetServiceRuntimeList = pendingServiceRuntimes
+    }
+    // Convert pending service runtime data to ServiceDeploymentTargets
+    // all service runtimes may spread on many applications, versions, hosts, providers
+    const targetCache: {[key:string]: ServiceDeploymentTargets} = {}
+    targetServiceRuntimeList.forEach((serviceRuntimeInDB: any)=> {
+      const cachekey = `${serviceRuntimeInDB.resource_id}:${serviceRuntimeInDB.application}:${serviceRuntimeInDB.version}:${utils.getKey(serviceRuntimeInDB.provider_info)}`
+      if (!targetCache[cachekey]) targetCache[cachekey] = {
+        application: serviceRuntimeInDB.application,
+        services: [],
+        hosts: [resourceInDB.id],
+        version: serviceRuntimeInDB.version,
+        useAllProviders: false,
+        providers: [serviceRuntimeInDB.provider_raw],
+        initParams: []
+      }
+      const target = targetCache[cachekey]
+      target.services.push({
+        module: serviceRuntimeInDB.module,
+        name: serviceRuntimeInDB.name,
+        version: serviceRuntimeInDB.version
+      })
+
+      if (serviceRuntimeInDB.settings_for_provider) {
+        const provider = target.providers![0]
+        if (!provider.applicationSettings) {
+          provider.applicationSettings = [{
+            application: serviceRuntimeInDB.application,
+            commonSettings: {},
+            serviceSettings: []
+          }]
+        }
+        const appSettings = provider.applicationSettings[0]
+        if (!appSettings.serviceSettings) appSettings.serviceSettings = []
+        appSettings.serviceSettings.push({
+          module: serviceRuntimeInDB.module,
+          name: serviceRuntimeInDB.name,
+          settings: serviceRuntimeInDB.settings_for_provider
+        })
+      }
+      
+      if (serviceRuntimeInDB.init_params) {
+        target.initParams!.push({
+          service: {
+            module: serviceRuntimeInDB.module,
+            name: serviceRuntimeInDB.name
+          },
+          arguments: serviceRuntimeInDB.init_params
+        })
+      }
+    })
+    // let the service deploy all the service runtimes other than sardines services
+    const deployJobs: ServiceDeploymentTargets[] = []
+    for (let key of Object.keys(targetCache)) {
+      deployJobs.push(targetCache[key])
+    }
+    if (deployJobs.length) {
+      const self = this
+      const execDeployJob = async() => {
+        setTimeout(async() => {
+          if (!deployJobs.length) return 
+          const job = deployJobs[0]
+          try {
+            const res = await self.deployServices(job, '', true)
+            console.log(`response from agent [${resourceInDB.id}]:`, res)
+            deployJobs.shift()
+          } catch (e) {
+            console.error(`ERROR while deploying pending services for agent [${resourceInDB.id}]:`, e)
+          }
+          await execDeployJob()
+        }, this.heartbeatTimespan)
+      }
+      await execDeployJob()
+    }
   }
 }

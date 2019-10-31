@@ -24,13 +24,10 @@ export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime
   // no worry about using repo_client module
 
   // wrap hostId
-  const data :any = {
-      resourceId: agent.hostId,
-      deployResult,
-  }
+  deployResult.resourceId = agent.hostId
 
   // use repo_client to send service runtimes to its self
-  let res: Sardines.Runtime.ServiceRuntimeUpdateResult = await RepositoryClient.exec('updateServiceRuntime', data)
+  let res: Sardines.Runtime.ServiceRuntimeUpdateResult = await RepositoryClient.exec('uploadServiceDeployResult', deployResult)
   if (res) {
     for (let appName of Object.keys(res)) {
       for (let pvdrkey of Object.keys(res[appName])) {
@@ -59,9 +56,9 @@ export const deployServices = async (targetServices: any, deployPlan: any, agent
   if (!targetServices) {
       throw utils.unifyErrMesg('services are not correctly compiled', 'shoal', 'start')
   }
-  const deployRes = await serviceDeployer.deploy(deployPlan, [targetServices], agent.providers, true)
+  const deployRes:Sardines.Runtime.DeployResult|null = await serviceDeployer.deploy(deployPlan, [targetServices], agent.providers, true)
   let repoRes = null
-  if (send) {
+  if (send && deployRes) {
       repoRes = await sendDeployResultToRepository(deployRes, agent)
   }
   return {deployResult: deployRes, repositoryResponse: repoRes}

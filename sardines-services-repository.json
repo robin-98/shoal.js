@@ -286,7 +286,7 @@
             "filepath": "/repository/index.ts"
         },
         {
-            "name": "updateServiceRuntime",
+            "name": "uploadServiceDeployResult",
             "module": "/repository",
             "arguments": [
                 {

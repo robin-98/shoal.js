@@ -28,12 +28,15 @@ const getSourceCodeFilePath = (filepath: string): string => {
 // serviceDefinitions: array of service definition file content, each for an application or part of an application
 // start or get an instance from factory of the provider
 // Register services on the specified provider
-export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions: any[], providerCache: Sardines.Runtime.ProviderCache, verbose: boolean = false) => {
+export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions: any[], providerCache: Sardines.Runtime.ProviderCache, verbose: boolean = false):Promise<Sardines.Runtime.DeployResult|null> => {
     if (!serviceDefinitions || !Array.isArray(serviceDefinitions) || !deployPlan.applications || !Array.isArray(deployPlan.applications)) {
         console.error(`No service is setup to deploy`)
-        return
+        return null
     }
-
+    const result: Sardines.Runtime.DeployResult = {
+        services: {},
+        providers: []
+    }
     const providerInstances: Map<string, any> = new Map()
     const providerSettingsCache: Map<string, Sardines.ProviderDefinition> = new Map()
     for (let providerDefinition of deployPlan.providers) {
@@ -48,6 +51,13 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     throw utils.unifyErrMesg(`failed to load provider class [${providerName}] from npm package`)
                 }
             }
+            const tmpPd = Object.assign({}, providerDefinition)
+            if (tmpPd.applicationSettings) {
+                for(let appSetting of tmpPd.applicationSettings) {
+                    if (appSetting.serviceSettings) delete appSetting.serviceSettings
+                }
+            }
+            result.providers.push(tmpPd)
             let pvdrSettings = Object.assign({}, providerDefinition.providerSettings)
             if (pvdrSettings.public) delete pvdrSettings.public
             const fastKey = JSON.stringify(pvdrSettings)
@@ -74,7 +84,6 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
     const sourceFiles: Map<string,{[key: string]: any}> = new Map()
 
     // Begin to deploy applications
-    const result: Sardines.Runtime.DeployResult = {}
     const serviceRuntimeCache: {[key:string]:Sardines.Runtime.Service} = {}
     
     for (let app of deployPlan.applications) {
@@ -94,7 +103,8 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             && app.code.locationType === Sardines.LocationType.git
             && app.code.location && app.code.url) {
             // for git repository
-            const sourceCodeDir = await Source.getSourceFromGit(app.code.url, localGitRoot, {version: app.version, initWorkDir: true})
+            const tmpRoot = `localGitRoot/${app.version}/`
+            const sourceCodeDir = await Source.getSourceFromGit(app.code.url, tmpRoot, {version: app.version, initWorkDir: true})
             if (sourceCodeDir) codeBaseDir = path.resolve(`${sourceCodeDir}/`, app.code.location)
         } else {
             throw utils.unifyErrMesg(`unsupported source code information, can not deploy services for application [${app.name}]`, 'shoal', 'deployer')
@@ -104,7 +114,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         const appVersion = app.version
 
         // Begin to deploy services
-        result[appName] = []
+        result.services[appName] = []
         if (codeBaseDir && fs.existsSync(codeBaseDir)) {
             let keys = serviceMap.keys()
             let i = keys.next()
@@ -208,7 +218,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                 i = keys.next()
                 // Service register is done on all providers
                 if (serviceRuntime.entries.length > 0) {
-                    result[appName].push(serviceRuntime)
+                    result.services[appName].push(serviceRuntime)
                 } else {
                     const errMsg = `Failed to register service [${appName}:${serviceId}] on all providers`
                     if (verbose) console.error(errMsg)
