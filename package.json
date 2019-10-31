@@ -62,5 +62,5 @@
         "prepublish": "npm run clear && npm run clearPackages && npm run build"
     },
     "type": "lib/index.d.ts",
-    "version": "0.1.18"
+    "version": "1.0.0"
 }
