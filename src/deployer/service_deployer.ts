@@ -103,7 +103,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             && app.code.locationType === Sardines.LocationType.git
             && app.code.location && app.code.url) {
             // for git repository
-            const tmpRoot = `localGitRoot/${app.version}/`
+            const tmpRoot = `${localGitRoot}/${app.version}/`
             const sourceCodeDir = await Source.getSourceFromGit(app.code.url, tmpRoot, {version: app.version, initWorkDir: true})
             if (sourceCodeDir) codeBaseDir = path.resolve(`${sourceCodeDir}/`, app.code.location)
         } else {
