@@ -1,6 +1,19 @@
 {
     "services": [
         {
+            "name": "deployService",
+            "module": "/agent",
+            "arguments": [
+                {
+                    "name": "data",
+                    "type": "ServiceDeployPlan[]"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/agent/index.ts"
+        },
+        {
             "name": "startHost",
             "module": "/agent",
             "arguments": [
@@ -12,19 +25,6 @@
                     "name": "heartbeatInterval",
                     "type": "number",
                     "default": "1000"
-                }
-            ],
-            "returnType": "any",
-            "isAsync": true,
-            "filepath": "/agent/index.ts"
-        },
-        {
-            "name": "deployService",
-            "module": "/agent",
-            "arguments": [
-                {
-                    "name": "data",
-                    "type": "ServiceDeployPlan[]"
                 }
             ],
             "returnType": "any",

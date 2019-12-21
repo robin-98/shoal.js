@@ -11,6 +11,13 @@ import { Sardines } from 'sardines-core'
 import { Service } from './repo_data_structure'
 import { utils } from 'sardines-core'
 
+// import * as fs from 'fs'
+// const debugJson = (obj:any) => {
+//   if (!obj || typeof obj !== 'object' || Object.keys(obj).length !== 1) throw 'unsupported object for debug'
+//   const key = Object.keys(obj)[0]
+//   fs.writeFileSync(`./debug-${key}.json`, JSON.stringify(obj[key],null,4))
+// }
+
 export interface  RuntimeQueryObject {
   name?: string
   type?: Sardines.Runtime.ResourceType
@@ -37,7 +44,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
   }
 
   protected getRuntimeQueryObj(type: Sardines.Runtime.RuntimeTargetType, target: Service|Sardines.Runtime.Resource) {
-    let runtimeObj: RuntimeQueryObject|null = null, table = null
+    let runtimeObj: RuntimeQueryObject = {}, table = null
     switch (type) {
       case Sardines.Runtime.RuntimeTargetType.service:
         runtimeObj = {
@@ -58,6 +65,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
   }
 
   async fetchServiceRuntime(serviceIdentity: Sardines.ServiceIdentity|Sardines.ServiceIdentity[], token: string, bypassToken: boolean = false): Promise<Sardines.Runtime.Service|Sardines.Runtime.Service[]|null> {
+    console.log('fetching service runtime:', serviceIdentity, 'token:', token)
+    
     if (!serviceIdentity || !token) return null
     if (!bypassToken) await this.validateToken(token, true)
     if (Array.isArray(serviceIdentity)) {
@@ -80,7 +89,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
       let service  :Service|null = null
       if (serviceIdentity.application !== 'sardines') service = <Service|null>await this.queryService(serviceQuery, token, bypassToken = true)
       if (serviceIdentity.application === 'sardines' || service) {
-        if (service) serviceQuery = { service_id: service.id }
+        if (service) serviceQuery = { id: service.id }
         let runtime :any = await this.findAvailableRuntime(Sardines.Runtime.RuntimeTargetType.service, serviceQuery)
         if (runtime) {
           let result: Sardines.Runtime.Service = {
@@ -106,5 +115,41 @@ export class RepositoryRuntime extends RepositoryDeployment {
       }
     }
     return null
+  }
+
+  async removeServiceRuntime(data: {hostlist?: string[], applications?: string[], modules?: string[], services?: string[], versions?: string[]}) {
+    const hostlist = data.hostlist
+    if (hostlist && hostlist.length) {
+      for (let hoststr of hostlist) {
+        const pair = hoststr.split('@')
+        if (!pair || pair.length > 2) {
+          throw `invalid host account and name: ${hoststr}, which should be "user@hostname"`
+        }
+        let hostId = ''
+        if (pair.length === 1) {
+          hostId = hoststr
+        } else {
+          const user = pair[0]
+          const host = pair[1]
+          hostId = await this.db!.get('resource', {
+                                                         name: host, 
+                                                         account: user, 
+                                                         type: Sardines.Runtime.ResourceType.host
+                                                       }, null, 1, 0, ['id'])
+        }
+        
+        if (hostId) {
+          // TODO: communicate with target hosts and shutdown those services on their agents
+          console.log('going to remove service runtime on host:', hostId)
+
+
+          // await this.db!.set('service_runtime', null, {resource_id: hostId})
+
+        }
+      }
+      
+    }
+
+    return true
   }
 }

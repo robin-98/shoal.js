@@ -6,11 +6,16 @@
  * @desc [description]
  */
 
-import { RepositoryHeart } from './repo_heart'
-import { Sardines } from 'sardines-core'
-import { utils } from 'sardines-core'
+import { RepositoryConnect } from './repo_connect'
+import { Sardines, utils } from 'sardines-core'
 import { Service } from './repo_data_structure'
-import { Core } from 'sardines-core'
+
+// import * as fs from 'fs'
+// const debugJson = (obj:any) => {
+//   if (!obj || typeof obj !== 'object' || Object.keys(obj).length !== 1) throw 'unsupported object for debug'
+//   const key = Object.keys(obj)[0]
+//   fs.writeFileSync(`./debug-${key}.json`, JSON.stringify(obj[key],null,4))
+// }
 
 export interface ServiceDeploymentTargets {
   application: string   // application name
@@ -53,7 +58,7 @@ export interface DeployResultCache {
 
 export interface ProviderCache {[pvdrkey: string]: Sardines.ProviderDefinition}
 
-export class RepositoryDeployment extends RepositoryHeart {
+export class RepositoryDeployment extends RepositoryConnect {
   constructor() {
     super()
   }
@@ -289,37 +294,13 @@ export class RepositoryDeployment extends RepositoryHeart {
         // using sardines-core invoke to request
         deployPlanAndDescObjForHost.push({deployPlan, serviceDescObj})
       }
-      // find out what provider the agent is using
-      const {provider_info, settings_for_provider, entry_type} = await this.db!.get('service_runtime', {
-        resource_id: hostInfo.id,
-        application: 'sardines',
-        module: '/agent',
-        name: 'deployService',
-        status: Sardines.Runtime.RuntimeStatus.ready
-      }, null, 1, 0, ['provider_info', 'settings_for_provider', 'entry_type'])
-      // send deploy plan and service description objects to the host using the particular provider
-      try {
-        const runtime: Sardines.Runtime.Service = {
-          identity: {
-            application: 'sardines',
-            module: '/agent',
-            name: 'deployService'
-          },
-          entries: [{
-            providerInfo: provider_info,
-            settingsForProvider: settings_for_provider,
-            type: entry_type
-          }],
-          arguments: [{
-            name: 'data',
-            type: 'any'
-          }]
-        }
-        const agentResp = await Core.invoke(runtime, deployPlanAndDescObjForHost)
-        res.push({hostInfo, res: agentResp})
-      } catch (e) {
-        console.log('Error while requesting agent:')
-        utils.inspectedLog(e)
+
+      // deploy on host
+      const agentRes = await this.invokeHostAgent({id: hostInfo.id}, 'deployService', deployPlanAndDescObjForHost)
+      if (agentRes.res) {
+        res.push({hostInfo, res: agentRes.res})
+      } else if (agentRes.error) {
+        console.log('Error while requesting agent:', agentRes.error)
       }
     }
 
@@ -538,8 +519,9 @@ export class RepositoryDeployment extends RepositoryHeart {
     // Convert pending service runtime data to ServiceDeploymentTargets
     // all service runtimes may spread on many applications, versions, hosts, providers
     const targetCache: {[key:string]: ServiceDeploymentTargets} = {}
-    targetServiceRuntimeList.forEach((serviceRuntimeInDB: any)=> {
+    for (let serviceRuntimeInDB of targetServiceRuntimeList) {
       const cachekey = `${serviceRuntimeInDB.resource_id}:${serviceRuntimeInDB.application}:${serviceRuntimeInDB.version}:${utils.getKey(serviceRuntimeInDB.provider_info)}`
+
       if (!targetCache[cachekey]) targetCache[cachekey] = {
         application: serviceRuntimeInDB.application,
         services: [],
@@ -583,7 +565,7 @@ export class RepositoryDeployment extends RepositoryHeart {
           arguments: serviceRuntimeInDB.init_params
         })
       }
-    })
+    }
     // let the service deploy all the service runtimes other than sardines services
     const deployJobs: ServiceDeploymentTargets[] = []
     for (let key of Object.keys(targetCache)) {

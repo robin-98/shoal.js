@@ -128,3 +128,10 @@ export const uploadServiceDeployResult = async(data: any, token: string) => {
     checkRepoStatus()
     return await unifyAsyncHandler('repository', 'upload service deployment result', repoInst!.uploadServiceDeployResult, repoInst)(data, token) 
 }
+
+export const removeServiceRuntime = async(data: any, token: string) => {
+    if (!data) throw unifyErrMesg('invalid data', 'repository', 'removeServiceRuntime')
+    checkRepoStatus()
+    return await unifyAsyncHandler('repository', 'remove service runtime on hosts', repoInst!.removeServiceRuntime, repoInst)(data, token) 
+}
+

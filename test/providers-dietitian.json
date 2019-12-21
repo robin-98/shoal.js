@@ -21,7 +21,7 @@
         "syslog": true,
         "public": {
             "protocol": "http",
-            "host": "192.168.1.28",
+            "host": "10.183.197.108",
             "root": "/",
             "port": 8888,
             "driver": "sardines-service-driver-http"
