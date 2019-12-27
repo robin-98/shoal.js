@@ -2,14 +2,9 @@ import * as serviceDeployer from './service_deployer'
 
 import { utils, Sardines } from 'sardines-core'
 import { RepositoryClient } from 'sardines-core'
+import { AgentState } from '../interfaces'
 
-export interface AgentInstance {
-  hasHostInfoUpdated: boolean
-  hostId: string|null
-  providers: Sardines.Runtime.ProviderCache
-}
-
-export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime.DeployResult|null|undefined, agent: AgentInstance) => {
+export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime.DeployResult|null|undefined, agent: AgentState) => {
   if (!deployResult) {
       throw 'invalid deploy result of services'
   }

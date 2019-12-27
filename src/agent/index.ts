@@ -1,7 +1,9 @@
-import { SardinesAgentInit, ServiceDeployPlan , Resource } from './agent_init'
-export { agentStat } from './agent_init'
+import { Resource } from './agent_init'
+import { ServiceDeployPlan, SardinesAgentRuntime } from './agent_runtime'
 
-const agent = new SardinesAgentInit()
+const agent = new SardinesAgentRuntime()
+
+export const agentState = agent.agentState
 
 export const deployService = async(data: ServiceDeployPlan[]) => {
   return await agent.deployService(data)

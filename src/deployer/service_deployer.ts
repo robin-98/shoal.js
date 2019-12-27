@@ -67,7 +67,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             }
             providerInstances.set(providerName, providerInst)
             if (verbose) {
-                console.log(`loaded provider [${providerName}]`)
+                console.log(`loaded provider [${providerName}] to deploy services`)
             }
             providerSettingsCache.set(providerName, providerDefinition)
         }
@@ -182,13 +182,14 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                         const tmpService = utils.mergeObjects({}, service)
                         tmpService.application = appName
                         tmpService.version = appVersion
-                        await providerInst.registerService(tmpService, handler, additionalServiceSettings)
+                        const serviceInPvdr = await providerInst.registerService(tmpService, handler, additionalServiceSettings)
                         if (verbose) {
-                            console.log(`service [${serviceId}] has been registered`)
+                            console.log(`service [${appName}:${serviceId}] has been registered`)
                         }
+
                         const providerInfo = providerSettings!.providerSettings.public
                         const pvdrkey = utils.getKey(providerInfo)
-                        Sardines.Transform.pushServiceIntoProviderCache(providerCache, pvdrkey, providerInfo, tmpService)
+                        Sardines.Transform.pushServiceIntoProviderCache(providerCache, pvdrkey, providerInfo, tmpService, serviceInPvdr)
                         // after registeration, service data structure will be changed:
                         // the arguments will have additional properties
                         // such as 'position' property for http provider
