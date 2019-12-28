@@ -144,18 +144,48 @@ export class RepositoryRuntime extends RepositoryDeployment {
           const agentData: any = Object.assign({}, data)
           delete agentData.hosts
           try {
-            const res = await this.invokeHostAgent({id: hostId}, 'removeServices', agentData)
-            console.log('[repository] response of agent for removing service runtimes:', res)
+            const agentResponse = await this.invokeHostAgent({id: hostId}, 'removeServices', agentData)
+            if (agentResponse.res && Array.isArray(agentResponse.res) && agentResponse.res.length) {
+              const dbres = await this.db!.set('service_runtime', null, {id: agentResponse.res})
+              console.log(`[repository] database response of removing service runtimes:`, dbres)
+            } else if (agentResponse.error) {
+              throw agentResponse.error
+            }
           } catch (e) {
-            console.log('[repository] Error while requesting agent to remove service runtimes', e)
+            console.warn('[repository] Error while requesting agent to remove service runtimes', e)
+            const query: any = { resource_id: hostId }
+            if (data.applications && data.applications.length && data.applications.indexOf('*') >= 0) {
+              const applicationList = await this.db!.get('service_runtime', query, null, 0, 0, ['application'])
+              if (applicationList && Array.isArray(applicationList) && applicationList.length) {
+                if (applicationList.indexOf('sardines') >= 0) {
+                  applicationList.splice(applicationList.indexOf('sardines'),1)
+                }
+                if (applicationList.length) {
+                  query.application = applicationList
+                }  
+              }
+            } else if (data.applications && data.applications.length) {
+              if (data.applications.indexOf('sardines') >= 0) {
+                data.applications.splice(data.applications.indexOf('sardines'), 1)
+              }
+              if (data.applications.length) {
+                query.application = data.applications
+              }
+            }
+
+            if (data.modules && data.modules.length && data.modules.indexOf('*') < 0) {
+              query.module = data.modules
+            }
+
+            if (data.services && data.services.length && data.services.indexOf('*') < 0) {
+              query.service = data.services
+            }
+
+            await this.db!.set('service_runtime', null, query)
+            console.warn('[reposiotry] service runtimes data removed no matter the host agent alive or not')
           }
-          
-
-          // await this.db!.set('service_runtime', null, {resource_id: hostId})
-
         }
       }
-      
     }
 
     return true

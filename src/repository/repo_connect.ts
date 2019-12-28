@@ -37,7 +37,10 @@ export class RepositoryConnect extends RepositoryHeart {
                                                 }, null, 1, 0, ['id'])
       }
       if (!hostId) {
-        throw utils.unifyErrMesg(`can not find target host [name: ${target.name}, account: ${target.account}] in repository`, 'repository', 'invoke host agent')
+        throw utils.unifyErrMesg({
+                                    message:`can not find target host [name: ${target.name}, account: ${target.account}] in repository`,
+                                    tag: 'target_host_not_found'
+                                  }, 'repository', 'invoke host agent')
       }
       
       // find out what provider the agent is using
@@ -51,7 +54,7 @@ export class RepositoryConnect extends RepositoryHeart {
 
       const {provider_info, settings_for_provider, entry_type} = rtInst || {}
       if (!provider_info || !entry_type) {
-        throw utils.unifyErrMesg(`can not find agent on target host [name: ${target.name}, account: ${target.account}, id: ${hostId}]`, 'repository', 'invoke host agent')
+        throw utils.unifyErrMesg(`can not find alive agent on target host [name: ${target.name}, account: ${target.account}, id: ${hostId}]`, 'repository', 'invoke host agent')
       }
 
       // send deploy plan and service description objects to the host using the particular provider

@@ -19,7 +19,7 @@ if (params.help) {
     --user=<user name>                : the user to operate the management
     --password=<password>             : password for that user if needed
     --remove-service-runtimes         : remove service runtimes mode
-        --hosts                       : host list going to remove service runtimes: <user1@hostname1>,<user2@hostname2>,...
+        --hosts                       : host list going to remove service runtimes: [user1@hostname1|hostId], [user2@hostname2|hostId],...
         --applications                : application name list to be removed: <appname1>,<appname2>,... ; '*' indicates all the applications
         --modules                     : module list to be removed in the applications ; '*' indicates all the modules
         --services                    : service list to be removed in the modules, '*' indicates all the services

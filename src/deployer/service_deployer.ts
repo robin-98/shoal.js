@@ -72,7 +72,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             }
             providerInstances.set(providerName, providerInst)
             if (verbose) {
-                console.log(`loaded provider [${providerName}] to deploy services`)
+                console.log(`[service deployer] loaded provider [${providerName}] to deploy services`)
             }
             providerSettingsCache.set(providerName, providerDefinition)
         }
@@ -189,7 +189,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                         tmpService.version = appVersion
                         const serviceInPvdr = await providerInst.registerService(tmpService, handler, additionalServiceSettings)
                         if (verbose) {
-                            console.log(`service [${appName}:${serviceId}] has been registered`)
+                            console.log(`[service deployer] service [${appName}:${serviceId}] has been registered`)
                         }
 
                         const providerInfo = providerSettings!.providerSettings.public

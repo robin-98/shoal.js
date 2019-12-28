@@ -17,7 +17,7 @@
         "sardines-compile-time-tools": "^1.0.21",
         "sardines-core": "^1.0.38",
         "sardines-service-driver-http": "^1.0.15",
-        "sardines-service-provider-http": "^1.0.3",
+        "sardines-service-provider-http": "^1.0.14",
         "semver": "^6.3.0",
         "simple-git": "^1.126.0",
         "systeminformation": "^4.14.4",

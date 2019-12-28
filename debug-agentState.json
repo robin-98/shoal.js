@@ -775,44 +775,44 @@
     "perf": {
         "cpu": {
             "count": 8,
-            "load": 8.9,
-            "usr": 6.2,
-            "sys": 2.7,
-            "idle": 91.1,
+            "load": 9.1,
+            "usr": 6.3,
+            "sys": 2.8,
+            "idle": 90.9,
             "irq": 0,
             "count_change": 0
         },
         "mem": {
             "total": 16384,
-            "free": 303,
-            "used": 16081,
-            "active": 4171,
-            "swaptotal": 9216,
-            "swapused": 8467,
-            "swapfree": 749,
+            "free": 1221,
+            "used": 15163,
+            "active": 3705,
+            "swaptotal": 10240,
+            "swapused": 9258,
+            "swapfree": 982,
             "mem_change": 0,
             "swap_change": 0
         },
         "proc": {
-            "all_processes": 643,
+            "all_processes": 645,
             "running": 1,
             "blocked": 0,
-            "sleeping": 642,
+            "sleeping": 644,
             "all_change": 0
         },
         "maxCpuProc": {
             "name": "deploy-repository-dev.json",
-            "cpu": 81.3,
+            "cpu": 75.7,
             "mem": 0.5
         },
         "maxMemProc": {
             "name": "Sublime Text",
-            "cpu": 1.2,
-            "mem": 5.9
+            "cpu": 0.6,
+            "mem": 5.2
         },
         "agentProc": {
             "name": "deploy-repository-dev.json",
-            "cpu": 81.3,
+            "cpu": 75.7,
             "mem": 0.5
         },
         "disk": {
@@ -823,7 +823,7 @@
         },
         "net": {},
         "timespan_sec": 0,
-        "checkAt": 1577518846851,
+        "checkAt": 1577546135829,
         "name": "mba-robin",
         "account": "rin",
         "type": "host"
