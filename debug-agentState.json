@@ -60,6 +60,27 @@
                                 },
                                 "serviceRuntimeId": "5a30c296-d8e2-48c6-a83f-09d4fa0cb404"
                             }
+                        },
+                        "removeServices": {
+                            "*": {
+                                "serviceSettingsInProvider": {
+                                    "path": "/sardines/agent/removeServices",
+                                    "protocol": "http",
+                                    "method": "post",
+                                    "inputParameters": [
+                                        {
+                                            "name": "data",
+                                            "type": "object",
+                                            "position": "body"
+                                        }
+                                    ],
+                                    "response": {
+                                        "type": "json"
+                                    },
+                                    "summary": "HTTP@post:/sardines/agent/removeServices"
+                                },
+                                "serviceRuntimeId": "4b1ee17b-3831-4bc7-bcad-1d4eac6ab6bd"
+                            }
                         }
                     },
                     "/repository": {
@@ -558,6 +579,7 @@
             "serviceRuntimeIds": [
                 "130e77d9-3ce9-47b6-bf54-08a7b9e08e4a",
                 "5a30c296-d8e2-48c6-a83f-09d4fa0cb404",
+                "4b1ee17b-3831-4bc7-bcad-1d4eac6ab6bd",
                 "c89b7b18-61c9-4101-9980-0f2f51ff3f89",
                 "48b3793b-54f0-4a36-b465-474c96ad3d16",
                 "c8ce4e2c-497d-44aa-8b01-6852038a52de",
@@ -590,6 +612,32 @@
             "serviceCache": {
                 "dietitian": {
                     "/auth": {
+                        "signUp": {
+                            "0.0.47": {
+                                "serviceSettingsInProvider": {
+                                    "path": "/dietitian/auth/signUp",
+                                    "protocol": "http",
+                                    "method": "post",
+                                    "inputParameters": [
+                                        {
+                                            "name": "account",
+                                            "type": "object",
+                                            "position": "body"
+                                        },
+                                        {
+                                            "name": "password",
+                                            "type": "string",
+                                            "position": "body"
+                                        }
+                                    ],
+                                    "response": {
+                                        "type": "json"
+                                    },
+                                    "summary": "HTTP@post:/dietitian/auth/signUp"
+                                },
+                                "serviceRuntimeId": "f455cc18-24f7-4ca1-9c73-d0f3fa4c26a5"
+                            }
+                        },
                         "setup": {
                             "0.0.47": {
                                 "serviceSettingsInProvider": {
@@ -672,32 +720,6 @@
                                 "serviceRuntimeId": "b320dc76-821d-4787-9ba0-0e932c014d3f"
                             }
                         },
-                        "signUp": {
-                            "0.0.47": {
-                                "serviceSettingsInProvider": {
-                                    "path": "/dietitian/auth/signUp",
-                                    "protocol": "http",
-                                    "method": "post",
-                                    "inputParameters": [
-                                        {
-                                            "name": "account",
-                                            "type": "object",
-                                            "position": "body"
-                                        },
-                                        {
-                                            "name": "password",
-                                            "type": "string",
-                                            "position": "body"
-                                        }
-                                    ],
-                                    "response": {
-                                        "type": "json"
-                                    },
-                                    "summary": "HTTP@post:/dietitian/auth/signUp"
-                                },
-                                "serviceRuntimeId": "f455cc18-24f7-4ca1-9c73-d0f3fa4c26a5"
-                            }
-                        },
                         "genSMSToken": {
                             "0.0.47": {
                                 "serviceSettingsInProvider": {
@@ -739,13 +761,13 @@
                 }
             },
             "serviceRuntimeIds": [
+                "f455cc18-24f7-4ca1-9c73-d0f3fa4c26a5",
                 "a3d47ad3-58a4-42a7-af79-5c914d36216c",
                 "3e9bdcfc-78d7-4686-bd55-6b690164a918",
                 "b396231c-783c-46b4-bc5d-f21b7726751b",
                 "b320dc76-821d-4787-9ba0-0e932c014d3f",
-                "f455cc18-24f7-4ca1-9c73-d0f3fa4c26a5",
-                "24d359df-51da-421c-9363-421358758b82",
-                "b96b8dbc-84b7-49a3-8d6a-3b8efbff7f90"
+                "b96b8dbc-84b7-49a3-8d6a-3b8efbff7f90",
+                "24d359df-51da-421c-9363-421358758b82"
             ]
         }
     },
@@ -753,44 +775,44 @@
     "perf": {
         "cpu": {
             "count": 8,
-            "load": 8.8,
-            "usr": 6.1,
+            "load": 8.9,
+            "usr": 6.2,
             "sys": 2.7,
-            "idle": 91.2,
+            "idle": 91.1,
             "irq": 0,
             "count_change": 0
         },
         "mem": {
             "total": 16384,
-            "free": 335,
-            "used": 16049,
-            "active": 4584,
-            "swaptotal": 7168,
-            "swapused": 6113,
-            "swapfree": 1055,
+            "free": 303,
+            "used": 16081,
+            "active": 4171,
+            "swaptotal": 9216,
+            "swapused": 8467,
+            "swapfree": 749,
             "mem_change": 0,
             "swap_change": 0
         },
         "proc": {
-            "all_processes": 641,
-            "running": 3,
+            "all_processes": 643,
+            "running": 1,
             "blocked": 0,
-            "sleeping": 638,
+            "sleeping": 642,
             "all_change": 0
         },
         "maxCpuProc": {
-            "name": "iTerm2",
-            "cpu": 99.9,
-            "mem": 3.3
+            "name": "deploy-repository-dev.json",
+            "cpu": 81.3,
+            "mem": 0.5
         },
         "maxMemProc": {
             "name": "Sublime Text",
-            "cpu": 1,
-            "mem": 3.8
+            "cpu": 1.2,
+            "mem": 5.9
         },
         "agentProc": {
             "name": "deploy-repository-dev.json",
-            "cpu": 74,
+            "cpu": 81.3,
             "mem": 0.5
         },
         "disk": {
@@ -801,7 +823,7 @@
         },
         "net": {},
         "timespan_sec": 0,
-        "checkAt": 1577437437818,
+        "checkAt": 1577518846851,
         "name": "mba-robin",
         "account": "rin",
         "type": "host"

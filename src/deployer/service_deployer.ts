@@ -59,8 +59,13 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             }
             result.providers.push(tmpPd)
             let pvdrSettings = Object.assign({}, providerDefinition.providerSettings)
-            if (pvdrSettings.public) delete pvdrSettings.public
-            const fastKey = JSON.stringify(pvdrSettings)
+            let fastKey = ''
+            if (pvdrSettings.public) {
+                fastKey = utils.getKey(pvdrSettings.public)
+                delete pvdrSettings.public
+            } else {
+                fastKey = JSON.stringify(pvdrSettings)
+            }
             const providerInst = Factory.getInstance(providerName, providerDefinition.providerSettings, 'provider', fastKey)
             if (!providerInst) {
                 throw utils.unifyErrMesg(`failed to instance provider [${providerName}]`, 'deployer', 'provider')

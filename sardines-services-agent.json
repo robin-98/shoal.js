@@ -30,6 +30,19 @@
             "returnType": "any",
             "isAsync": true,
             "filepath": "/agent/index.ts"
+        },
+        {
+            "name": "removeServices",
+            "module": "/agent",
+            "arguments": [
+                {
+                    "name": "data",
+                    "type": "any"
+                }
+            ],
+            "returnType": "any",
+            "isAsync": true,
+            "filepath": "/agent/index.ts"
         }
     ],
     "application": "sardines"

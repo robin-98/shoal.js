@@ -12,3 +12,7 @@ export const deployService = async(data: ServiceDeployPlan[]) => {
 export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 1000) => {
   return await agent.startHost(hostInfo, heartbeatInterval)
 }
+
+export const removeServices = async(data: any) => {
+  return await agent.removeServices(data)
+}

@@ -117,8 +117,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
     return null
   }
 
-  async removeServiceRuntime(data: {hostlist?: string[], applications?: string[], modules?: string[], services?: string[], versions?: string[]}) {
-    const hostlist = data.hostlist
+  async removeServiceRuntime(data: {hosts?: string[], applications?: string[], modules?: string[], services?: string[], versions?: string[]}) {
+    const hostlist = data.hosts
     if (hostlist && hostlist.length) {
       for (let hoststr of hostlist) {
         const pair = hoststr.split('@')
@@ -131,17 +131,25 @@ export class RepositoryRuntime extends RepositoryDeployment {
         } else {
           const user = pair[0]
           const host = pair[1]
-          hostId = await this.db!.get('resource', {
+          const hostInst = await this.db!.get('resource', {
                                                          name: host, 
                                                          account: user, 
                                                          type: Sardines.Runtime.ResourceType.host
                                                        }, null, 1, 0, ['id'])
+          if (hostInst) hostId = hostInst.id
         }
         
         if (hostId) {
           // TODO: communicate with target hosts and shutdown those services on their agents
-          console.log('going to remove service runtime on host:', hostId)
-
+          const agentData: any = Object.assign({}, data)
+          delete agentData.hosts
+          try {
+            const res = await this.invokeHostAgent({id: hostId}, 'removeServices', agentData)
+            console.log('[repository] response of agent for removing service runtimes:', res)
+          } catch (e) {
+            console.log('[repository] Error while requesting agent to remove service runtimes', e)
+          }
+          
 
           // await this.db!.set('service_runtime', null, {resource_id: hostId})
 

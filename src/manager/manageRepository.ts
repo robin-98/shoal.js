@@ -18,8 +18,12 @@ if (params.help) {
     --create-account=<account name>:<password>    create an account
     --user=<user name>                : the user to operate the management
     --password=<password>             : password for that user if needed
-    --remove-service-runtime-on-hosts : remove service runtimes on hosts: <user1@hostname1>,<user2@hostname2>,...
-    --applications                    : application name list to be removed: <appname1>,<appname2>,...
+    --remove-service-runtimes         : remove service runtimes mode
+        --hosts                       : host list going to remove service runtimes: <user1@hostname1>,<user2@hostname2>,...
+        --applications                : application name list to be removed: <appname1>,<appname2>,... ; '*' indicates all the applications
+        --modules                     : module list to be removed in the applications ; '*' indicates all the modules
+        --services                    : service list to be removed in the modules, '*' indicates all the services
+        --versions                    : version list to be removed of the services, '*' indicates all the versions
     --help : this menu
   `)
 }
@@ -39,12 +43,22 @@ const manager = async() => {
     }
 
     // Remove service runtime on host
-    if (params['remove-service-runtime-on-hosts']) {
-      const hostlist = params['remove-service-runtime-on-hosts'].split(',')
-      if (!hostlist || !hostlist.length) {
+    if (params['remove-service-runtimes']) {
+      if (!params['hosts'] || typeof params['hosts'] !== 'string') {
         throw 'unsupported parameter for service runtime removing on hosts'
       }
-      return await RepositoryClient.exec('removeServiceRuntime', {hostlist})
+      const hostlist = params['hosts'].split(',')
+      const applist = (typeof params['applications'] === 'string') ? params['applications'].split(',') : ['*']
+      const modulelist = (typeof params['modules'] === 'string') ? params['modules'].split(',') : ['*']
+      const servicelist = (typeof params['services'] === 'string') ? params['services'].split(',') : ['*']
+      const versionlist = (typeof params['versions'] === 'string') ? params['versions'].split(',') : ['*']
+      return await RepositoryClient.exec('removeServiceRuntime', {
+        hosts: hostlist,
+        applications: applist,
+        modules: modulelist,
+        services: servicelist,
+        versions: versionlist
+      })
     }
 
 
