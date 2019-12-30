@@ -1,0 +1,121 @@
+{
+    "sardines": {
+        "/agent": {
+            "deployService": {
+                "*": true
+            },
+            "startHost": {
+                "*": true
+            },
+            "removeServices": {
+                "*": true
+            }
+        },
+        "/repository": {
+            "setup": {
+                "*": true
+            },
+            "signIn": {
+                "*": true
+            },
+            "signOut": {
+                "*": true
+            },
+            "signUp": {
+                "*": true
+            },
+            "createOrUpdateApplication": {
+                "*": true
+            },
+            "queryApplication": {
+                "*": true
+            },
+            "deleteApplication": {
+                "*": true
+            },
+            "queryService": {
+                "*": true
+            },
+            "createOrUpdateService": {
+                "*": true
+            },
+            "deleteService": {
+                "*": true
+            },
+            "querySource": {
+                "*": true
+            },
+            "createOrUpdateSource": {
+                "*": true
+            },
+            "deleteSource": {
+                "*": true
+            },
+            "fetchServiceRuntime": {
+                "*": true
+            },
+            "resourceHeartbeat": {
+                "*": true
+            },
+            "updateResourceInfo": {
+                "*": true
+            },
+            "deployServices": {
+                "*": true
+            },
+            "uploadServiceDeployResult": {
+                "*": true
+            },
+            "removeServiceRuntime": {
+                "*": true
+            }
+        }
+    },
+    "dietitian": {
+        "/auth": {
+            "signIn": {
+                "0.0.47": true,
+                "0.0.52": true,
+                "0.0.53": true
+            },
+            "setup": {
+                "0.0.47": true,
+                "0.0.52": true,
+                "0.0.53": true
+            },
+            "genSMSToken": {
+                "0.0.47": true,
+                "0.0.52": true,
+                "0.0.53": true
+            },
+            "signUp": {
+                "0.0.47": true,
+                "0.0.52": true,
+                "0.0.53": true
+            },
+            "fakeAccount": {
+                "0.0.47": true,
+                "0.0.52": true,
+                "0.0.53": true
+            },
+            "signOut": {
+                "0.0.47": true,
+                "0.0.52": true,
+                "0.0.53": true
+            }
+        },
+        "/": {
+            "placeholder": {
+                "0.0.47": true,
+                "0.0.52": true,
+                "0.0.53": true
+            }
+        },
+        "/utils/tencent_cloud": {
+            "sendAuthCode": {
+                "0.0.52": true,
+                "0.0.53": true
+            }
+        }
+    }
+}

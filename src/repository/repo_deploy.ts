@@ -10,13 +10,6 @@ import { RepositoryConnect } from './repo_connect'
 import { Sardines, utils } from 'sardines-core'
 import { Service } from './repo_data_structure'
 
-// import * as fs from 'fs'
-// const debugJson = (obj:any) => {
-//   if (!obj || typeof obj !== 'object' || Object.keys(obj).length !== 1) throw 'unsupported object for debug'
-//   const key = Object.keys(obj)[0]
-//   fs.writeFileSync(`./debug-${key}.json`, JSON.stringify(obj[key],null,4))
-// }
-
 export interface ServiceDeploymentTargets {
   application: string   // application name
   services: { 
@@ -300,7 +293,7 @@ export class RepositoryDeployment extends RepositoryConnect {
       if (agentRes.res) {
         res.push({hostInfo, res: agentRes.res})
       } else if (agentRes.error) {
-        console.log('Error while requesting agent:', agentRes.error)
+        console.log('[repository][deployServices] Error while requesting agent:', agentRes.error)
       }
     }
 
@@ -407,6 +400,7 @@ export class RepositoryDeployment extends RepositoryConnect {
     const dpres = await this.parseDeployResult(runtimeOfApps)
     const cacheApps = dpres.deployResult
     const cachePvdr = dpres.providers
+
     // Save service runtime into database by apps and entries
     const result: Sardines.Runtime.ServiceRuntimeUpdateResult = {}
     for (let app in cacheApps) {
@@ -414,6 +408,7 @@ export class RepositoryDeployment extends RepositoryConnect {
       for (let pvdrKey in cacheApps[app]) {
         const entry = cacheApps[app][pvdrKey].entry
         const services = cacheApps[app][pvdrKey].services
+        const rawProvider = cachePvdr[pvdrKey]
         result[app][pvdrKey] = []
         for (let service of services) {
           const identity = service.identity
@@ -459,7 +454,7 @@ export class RepositoryDeployment extends RepositoryConnect {
           const runtimeData = Object.assign({
             last_active_on: Date.now(),
             status: Sardines.Runtime.RuntimeStatus.ready,
-            provider_raw: cachePvdr[pvdrKey],
+            provider_raw: rawProvider,
           }, runtimeQuery)
           if (serviceArguments && identity.application !== 'sardines') {
             runtimeData.init_params = serviceArguments
@@ -579,10 +574,10 @@ export class RepositoryDeployment extends RepositoryConnect {
           const job = deployJobs[0]
           try {
             const res = await self.deployServices(job, '', true)
-            console.log(`response from agent [${resourceInDB.id}]:`, res)
+            console.log(`[repository][reloadPendingServices] response from agent [${resourceInDB.id}]:`, res)
             deployJobs.shift()
           } catch (e) {
-            console.error(`ERROR while deploying pending services for agent [${resourceInDB.id}]:`, e)
+            console.error(`[repository][reloadPendingServices] ERROR while deploying pending services for agent [${resourceInDB.id}]:`, e)
           }
           await execDeployJob()
         }, this.heartbeatTimespan)

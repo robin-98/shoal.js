@@ -11,13 +11,6 @@ import { Sardines } from 'sardines-core'
 import { Service } from './repo_data_structure'
 import { utils } from 'sardines-core'
 
-// import * as fs from 'fs'
-// const debugJson = (obj:any) => {
-//   if (!obj || typeof obj !== 'object' || Object.keys(obj).length !== 1) throw 'unsupported object for debug'
-//   const key = Object.keys(obj)[0]
-//   fs.writeFileSync(`./debug-${key}.json`, JSON.stringify(obj[key],null,4))
-// }
-
 export interface  RuntimeQueryObject {
   name?: string
   type?: Sardines.Runtime.ResourceType
@@ -65,7 +58,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
   }
 
   async fetchServiceRuntime(serviceIdentity: Sardines.ServiceIdentity|Sardines.ServiceIdentity[], token: string, bypassToken: boolean = false): Promise<Sardines.Runtime.Service|Sardines.Runtime.Service[]|null> {
-    console.log('fetching service runtime:', serviceIdentity, 'token:', token)
+    console.log('[repository] fetching service runtime:', serviceIdentity, 'token:', token)
     
     if (!serviceIdentity || !token) return null
     if (!bypassToken) await this.validateToken(token, true)

@@ -14,6 +14,8 @@ import { Source } from 'sardines-compile-time-tools'
 import { getServiceDefinitionsMap } from './deployer_utils'
 import * as fs from 'fs';
 
+import { ServerUtils } from '../interfaces'
+
 const {params} = utils.parseArgs()
 const localGitRoot = './tmp_sardines_git_root'
 
@@ -82,10 +84,6 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
     if (!appMap) {
         throw utils.unifyErrMesg(`Can not parse service definitions`, 'shoal', 'deploy')
     }
-    for (let serviceDef of serviceDefinitions) {
-        const cache = Sardines.Transform.fromServiceDescriptionFileToServiceCache(serviceDef)
-        RepositoryClient.setLocalServices(cache)
-    }
     const sourceFiles: Map<string,{[key: string]: any}> = new Map()
 
     // Begin to deploy applications
@@ -96,6 +94,14 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         let codeBaseDir = null
         if (!app.name || typeof app.name !== 'string') continue
         if (!appMap!.has(app.name)) continue
+
+        // Cache the registered local service
+        for (let serviceDef of serviceDefinitions) {
+            if (serviceDef.application !== appName) continue
+            const cache = Sardines.Transform.fromServiceDescriptionFileToServiceCache(serviceDef, {booleanValue: true, version: app.version})
+            RepositoryClient.setLocalServices(cache)
+        }
+        ServerUtils.debugJson({localServices: RepositoryClient.localServices})
 
         const serviceMap = appMap!.get(app.name)
         if (!serviceMap) continue
@@ -108,8 +114,13 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             && app.code.locationType === Sardines.LocationType.git
             && app.code.location && app.code.url) {
             // for git repository
-            const tmpRoot = `${localGitRoot}/${app.version}/`
-            const sourceCodeDir = await Source.getSourceFromGit(app.code.url, tmpRoot, {version: app.version, initWorkDir: true})
+            const tmpRoot = `${localGitRoot}/`
+            const sourceCodeDir = await Source.getSourceFromGit(app.code.url, tmpRoot, {
+                                                                    application: appName,
+                                                                    version: app.version,
+                                                                    initWorkDir: false,
+                                                                    verbose: true
+                                                                })
             if (sourceCodeDir) codeBaseDir = path.resolve(`${sourceCodeDir}/`, app.code.location)
         } else {
             throw utils.unifyErrMesg(`unsupported source code information, can not deploy services for application [${app.name}]`, 'shoal', 'deployer')
@@ -189,7 +200,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                         tmpService.version = appVersion
                         const serviceInPvdr = await providerInst.registerService(tmpService, handler, additionalServiceSettings)
                         if (verbose) {
-                            console.log(`[service deployer] service [${appName}:${serviceId}] has been registered`)
+                            console.log(`[service deployer] service [${appName}:${serviceId}:${appVersion}] has been registered`)
                         }
 
                         const providerInfo = providerSettings!.providerSettings.public

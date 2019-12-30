@@ -5,7 +5,6 @@
 
 import { Sardines, utils, Factory } from 'sardines-core'
 import { SardinesAgentInit } from './agent_init'
-import { ServerUtils } from '../interfaces'
 import * as deployer from '../deployer'
 
 export interface ServiceDeployPlan {
@@ -27,7 +26,6 @@ export class SardinesAgentRuntime extends SardinesAgentInit {
       let res: any = await deployer.deployServices(dp.serviceDescObj, dp.deployPlan, this.agentState, true)
       result.push(res)
     }
-    ServerUtils.debugJson({agentState: this.agentState})
     return result
   }
 
