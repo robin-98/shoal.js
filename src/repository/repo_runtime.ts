@@ -137,6 +137,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
           const agentData: any = Object.assign({}, data)
           delete agentData.hosts
           try {
+            console.log(`[repository][removeServiceRuntime] going to remove service runtimes on host [${hostId}]:`)
+            console.log(agentData)
             const agentResponse = await this.invokeHostAgent({id: hostId}, 'removeServices', agentData)
             if (agentResponse.res && Array.isArray(agentResponse.res) && agentResponse.res.length) {
               const dbres = await this.db!.set('service_runtime', null, {id: agentResponse.res})
@@ -172,6 +174,10 @@ export class RepositoryRuntime extends RepositoryDeployment {
 
             if (data.services && data.services.length && data.services.indexOf('*') < 0) {
               query.service = data.services
+            }
+
+            if (data.versions && data.versions.length && data.versions.indexOf('*') < 0) {
+              query.version = data.versions
             }
 
             await this.db!.set('service_runtime', null, query)

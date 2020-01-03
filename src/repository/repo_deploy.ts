@@ -174,7 +174,7 @@ export class RepositoryDeployment extends RepositoryConnect {
     if (!services || services.length === 0) {
       // deploy all services of that application, 
       // use 'version' as target version of all services
-      let serviceInsts = await this.queryService(serviceQuery, token, true)
+      let serviceInsts = await this.queryService(serviceQuery, token, true, 0)
       if (serviceInsts && !Array.isArray(serviceInsts)) {
         serviceList.push(serviceInsts)
       } else if(serviceInsts) {
@@ -190,7 +190,7 @@ export class RepositoryDeployment extends RepositoryConnect {
         const targetService = services[i]
         // use targetService.version as version of all the target
         const tmpQuery: any = Object.assign({application}, targetService)
-        const tmpServiceInsts = await this.queryService(<Service>tmpQuery, token, true)
+        const tmpServiceInsts = await this.queryService(<Service>tmpQuery, token, true, 0)
         if (tmpServiceInsts) {
           if (!Array.isArray(tmpServiceInsts)){
             serviceList.push(tmpServiceInsts)
@@ -574,7 +574,15 @@ export class RepositoryDeployment extends RepositoryConnect {
           const job = deployJobs[0]
           try {
             const res = await self.deployServices(job, '', true)
-            console.log(`[repository][reloadPendingServices] response from agent [${resourceInDB.id}]:`, res)
+            if (!res || !Array.isArray(res) || !res.length) {
+              console.log(`[repository][reloadPendingServices] response from agent [${resourceInDB.id}]:`, utils.inspect(res))
+            } else if (res.length === 1) {
+              console.log(`[repository][reloadPendingServices] response from agent [${resourceInDB.id}]:`, utils.inspect(res[0].res))
+            } else {
+              for (let i = 0; i< res.length; i++ ) {
+                console.log(`[repository][reloadPendingServices] response from agent [${resourceInDB.id}] No.${i} item:`, utils.inspect(res[i].res))
+              }
+            }
             deployJobs.shift()
           } catch (e) {
             console.error(`[repository][reloadPendingServices] ERROR while deploying pending services for agent [${resourceInDB.id}]:`, e)

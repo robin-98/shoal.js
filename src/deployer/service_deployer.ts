@@ -14,8 +14,6 @@ import { Source } from 'sardines-compile-time-tools'
 import { getServiceDefinitionsMap } from './deployer_utils'
 import * as fs from 'fs';
 
-import { ServerUtils } from '../interfaces'
-
 const {params} = utils.parseArgs()
 const localGitRoot = './tmp_sardines_git_root'
 
@@ -85,7 +83,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         throw utils.unifyErrMesg(`Can not parse service definitions`, 'shoal', 'deploy')
     }
     const sourceFiles: Map<string,{[key: string]: any}> = new Map()
-
+    console.log('[service deployer] appMap:', appMap)
     // Begin to deploy applications
     const serviceRuntimeCache: {[key:string]:Sardines.Runtime.Service} = {}
     
@@ -101,7 +99,6 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             const cache = Sardines.Transform.fromServiceDescriptionFileToServiceCache(serviceDef, {booleanValue: true, version: app.version})
             RepositoryClient.setLocalServices(cache)
         }
-        ServerUtils.debugJson({localServices: RepositoryClient.localServices})
 
         const serviceMap = appMap!.get(app.name)
         if (!serviceMap) continue
@@ -137,6 +134,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             while (!i.done) {
                 const serviceId = i.value
                 let service = serviceMap.get(serviceId)!
+                console.log(`[service deployer] going to deploy service [${serviceId}]:`, service)
                 if (!service.filepath) {
                     throw utils.unifyErrMesg(`File path is missing: service [${serviceId}]`, 'shoal', 'deploy')
                 }
@@ -255,6 +253,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     }
                     if (!serviceIdStr) continue
                     let service = serviceMap.get(serviceIdStr)!
+                    console.log(`[service deployer] init service [${serviceIdStr}]`, service)
                     let sourceCodeFile = getSourceCodeFilePath(path.resolve(codeBaseDir, './' + service.filepath))
                     if (fs.existsSync(sourceCodeFile)) {
                         if (serviceRuntimeSettings.arguments) {

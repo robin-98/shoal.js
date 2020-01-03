@@ -1,16 +1,24 @@
-#? /usr/local/bin/python3
+#? /usr/bin/python3
 
 import subprocess, sys, json, os
+import argparse
 process = subprocess.Popen('if [[ "`which psql`" == "" ]]; then echo "Executive psql not found"; exit 1; fi', shell=True, stdout=subprocess.PIPE)
 process.wait()
 if process.returncode == 1:
     sys.exit(1)
 
-env = 'dev'
-if len(sys.argv) > 1:
-    env = sys.argv[1]
-running_dir = os.path.dirname(os.path.realpath(__file__))
-proj_settings_file = running_dir + '/proj-settings.'+env+'.json'
+argParser = argparse.ArgumentParser(description='create or config database')
+argParser.add_argument('--env', type=str, required=False, help='env tag, such as dev, prod, test, ...')
+argParser.add_argument('--project-settings-file', type=str, required=True, help='project settings file in JSON format')
+args = argParser.parse_args()
+
+# env = 'dev'
+# if len(sys.argv) > 1:
+#     env = sys.argv[1]
+# running_dir = os.path.dirname(os.path.realpath(__file__))
+# proj_settings_file = running_dir + '/proj-settings.'+env+'.json'
+proj_settings_file = args.project_settings_file
+env = args.env
 
 def exec(cmd):
     print(cmd)

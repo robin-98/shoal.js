@@ -4,27 +4,14 @@
       "name": "setup"
   },
   "arguments": [{
-      "type": "postres",
+      "type": "postgres",
       "settings": {
-        "db": {
-            "type": "postgres",
-            "settings": {
-                "host": "localhost",
-                "port": 5432,
-                "database": "sardines_test",
-                "schema": "test",
-                "user": "sardines",
-                "password": "Sardines2019"
-            }
-        },
-        "owner": {
-            "name": "robin",
-            "password": "Startup@2013"
-        },
-        "shoalUser": {
-            "name": "sardines-shoal",
-            "password": "Sardines@2019"
-        }
-    }
+          "host": "localhost",
+          "port": 5432,
+          "database": "dietitian_rd",
+          "schema": "dietitian_rd",
+          "user": "dietitian_rd",
+          "password": "Dietitian@2020"
+      }
   }]
 }]

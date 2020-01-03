@@ -419,7 +419,7 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
         }
     }
 
-    async queryService(service: Service, token: string, bypassToken: boolean = false): Promise<Service|Service[]|null> {
+    async queryService(service: Service, token: string, bypassToken: boolean = false, limit: number = 1): Promise<Service|Service[]|null> {
         if (!bypassToken) await this.validateToken(token, true)
 
         // Compose general query for the application
@@ -450,7 +450,7 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
         // to query entire module
         let queryResult: any = null
         if (serviceQuery.version) {
-            queryResult = await this.db!.get('service', serviceQuery)
+            queryResult = await this.db!.get('service', serviceQuery, null, limit)
         } else if (serviceQuery.name && serviceQuery.module) {
             let orderby = { create_on: -1 }
             queryResult = await this.db!.get('service', serviceQuery, orderby, 1)
@@ -471,7 +471,7 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
                     }
                 }
                 if (queryResult.length === 0) return null
-            }   
+            }
         }
         if (!queryResult) return null
 

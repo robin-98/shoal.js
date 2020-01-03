@@ -3,10 +3,15 @@
  * Created on 2019-12-27
  */
 import * as fs from 'fs'
+
 export const debugJson = (obj:any) => {
-  if (!obj || typeof obj !== 'object' || !Object.keys(obj).length) throw 'unsupported object for debug'
+  if (!obj || typeof obj !== 'object' || !Object.keys(obj).length) {
+    throw `[ServerUtils][debugJson] unsupported object type[${typeof obj}] for debug`
+  }
   for (let key of Object.keys(obj)) {
-    fs.writeFileSync(`./debug-${key}.json`, JSON.stringify(obj[key],null,4))
+    const filepath = `./debug-${key}.json`
+    console.log(`[ServerUtils][debugJson] dumping object <${typeof obj[key]}>${key} at ${filepath}`)
+    fs.writeFileSync(filepath, JSON.stringify(obj[key],null,4))
   }
 }
 
