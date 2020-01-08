@@ -2,22 +2,13 @@
 
 import subprocess, sys, json, os
 import argparse
-process = subprocess.Popen('if [[ "`which psql`" == "" ]]; then echo "Executive psql not found"; exit 1; fi', shell=True, stdout=subprocess.PIPE)
-process.wait()
-if process.returncode == 1:
-    sys.exit(1)
 
 argParser = argparse.ArgumentParser(description='create or config database')
 argParser.add_argument('--env', type=str, required=False, help='env tag, such as dev, prod, test, ...')
-argParser.add_argument('--project-settings-file', type=str, required=True, help='project settings file in JSON format')
+argParser.add_argument('--database-settings-file', type=str, required=True, help='project settings file in JSON format')
 args = argParser.parse_args()
 
-# env = 'dev'
-# if len(sys.argv) > 1:
-#     env = sys.argv[1]
-# running_dir = os.path.dirname(os.path.realpath(__file__))
-# proj_settings_file = running_dir + '/proj-settings.'+env+'.json'
-proj_settings_file = args.project_settings_file
+db_settings_file = args.database_settings_file
 env = args.env
 
 def exec(cmd):
@@ -25,18 +16,23 @@ def exec(cmd):
     os.system(cmd)
 
 try:
-    with open(proj_settings_file) as f:
-        project_settings = json.load(f)
+    with open(db_settings_file) as f:
+        database_settings = json.load(f)
     
-    TYPE = project_settings["storage"]["type"]
-    USER = project_settings["storage"]["settings"]["user"]
-    PASSWORD = project_settings["storage"]["settings"]["password"]
-    DATABASE = project_settings["storage"]["settings"]["database"]
-    SCHEMA = project_settings["storage"]["settings"]["schema"]
-    HOST = project_settings["storage"]["settings"]["host"]
-    PORT = project_settings["storage"]["settings"]["port"]
+    TYPE = database_settings["type"]
+    USER = database_settings[["user"]
+    PASSWORD = database_settings["password"]
+    DATABASE = database_settings["database"]
+    SCHEMA = database_settings["schema"]
+    HOST = database_settings["host"]
+    PORT = database_settings["port"]
 
     if TYPE == "postgres":
+        process = subprocess.Popen('if [[ "`which psql`" == "" ]]; then echo "Executive psql not found"; exit 1; fi', shell=True, stdout=subprocess.PIPE)
+        process.wait()
+        if process.returncode == 1:
+            sys.exit(1)
+
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -c "CREATE DATABASE ' + DATABASE + ';"')
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE USER ' + USER + ' WITH PASSWORD \'' + PASSWORD + '\';"')
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "GRANT ALL PRIVILEGES ON DATABASE ' + DATABASE + ' TO ' + USER + ';"')
@@ -46,6 +42,6 @@ try:
         exec('PGPASSWORD=' + PASSWORD + ' psql -h ' + HOST + ' -p ' + str(PORT) + ' -U ' + USER + ' -d ' + DATABASE + ' -c "SELECT uuid_generate_v4();"')
 
 except FileNotFoundError:
-    print('project settings file does not exist on the location: ' + proj_settings_file)
+    print('Database settings file does not exist on the location: ' + db_settings_file)
 except:
     print('unknown error')
