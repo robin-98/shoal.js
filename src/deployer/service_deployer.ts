@@ -66,9 +66,15 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
             } else {
                 fastKey = JSON.stringify(pvdrSettings)
             }
-            const providerInst = Factory.getInstance(providerName, providerDefinition.providerSettings, 'provider', fastKey)
+            let providerInst: any = null
+            try {
+                providerInst = Factory.getInstance(providerName, providerDefinition.providerSettings, 'provider', fastKey)
+            } catch (e) {
+                console.error('[service deployer] Error while getting provider instance for', providerName, providerDefinition.providerSettings)
+            }
+            
             if (!providerInst) {
-                throw utils.unifyErrMesg(`failed to instance provider [${providerName}]`, 'deployer', 'provider')
+                throw utils.unifyErrMesg(`failed to instant provider [${providerName}]`, 'deployer', 'provider')
             }
             providerInstances.set(providerName, providerInst)
             if (verbose) {

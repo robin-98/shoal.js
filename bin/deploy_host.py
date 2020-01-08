@@ -16,7 +16,7 @@ argParser.add_argument('--os-user', type=str, required=False, help='OS user on t
 argParser.add_argument('--ipv4', type=str, required=False, help='IPv4 address of the remote host')
 argParser.add_argument('--ssh-port', type=int, required=False, help='SSH port of the remote host')
 argParser.add_argument('--ipv6', type=str, required=False, help='IPv6 address of the remote host')
-argParser.add_argument('--node-bin', type=str, required=False, default='./bin/node-v12.8.0-linux-x64.tar.xz', help='Node binary package to be copied to remote host')
+argParser.add_argument('--node-bin', type=str, required=False, default='./bin/lib/node-v13.6.0-linux-x64.tar.xz', help='Node binary package to be copied to remote host')
 argParser.add_argument('--shoal-pkg', type=str, required=False, default=cwd, help='Sardines shoal source package location')
 argParser.add_argument('--providers', type=str, required=False, default='sardines-service-provider-http', help='Providers for the host to launch services, seperated by ","')
 argParser.add_argument('--provider-settings', type=str, required=False, default='null', help='Provider settings for the providers, in JSON format, must be an array')
