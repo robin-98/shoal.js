@@ -1,4 +1,4 @@
-#? /usr/bin/python3
+#! /usr/bin/python3
 
 import subprocess, sys, json, os
 import argparse
@@ -20,12 +20,12 @@ try:
         database_settings = json.load(f)
     
     TYPE = database_settings["type"]
-    USER = database_settings[["user"]
-    PASSWORD = database_settings["password"]
-    DATABASE = database_settings["database"]
-    SCHEMA = database_settings["schema"]
-    HOST = database_settings["host"]
-    PORT = database_settings["port"]
+    USER = database_settings["settings"]["user"]
+    PASSWORD = database_settings["settings"]["password"]
+    DATABASE = database_settings["settings"]["database"]
+    SCHEMA = database_settings["settings"]["schema"]
+    HOST = database_settings["settings"]["host"]
+    PORT = database_settings["settings"]["port"]
 
     if TYPE == "postgres":
         process = subprocess.Popen('if [[ "`which psql`" == "" ]]; then echo "Executive psql not found"; exit 1; fi', shell=True, stdout=subprocess.PIPE)
