@@ -5,3 +5,5 @@ src/sardines
 tmp*
 agent.log
 deploy-agent.json
+sardines-config.json
+sardines-services-*.json

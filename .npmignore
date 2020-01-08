@@ -1,7 +1,9 @@
 src
 node_modules
 conf
-bin/node-*
 test
 tmp*
-agnet.log
+agent.log
+deploy-agent.json
+sardines-config.json
+sardines-services-*.json
