@@ -18,7 +18,7 @@ def exec(cmd):
 try:
     with open(db_settings_file) as f:
         database_settings = json.load(f)
-    
+
     TYPE = database_settings["type"]
     USER = database_settings["settings"]["user"]
     PASSWORD = database_settings["settings"]["password"]
@@ -28,11 +28,6 @@ try:
     PORT = database_settings["settings"]["port"]
 
     if TYPE == "postgres":
-        process = subprocess.Popen('if [[ "`which psql`" == "" ]]; then echo "Executive psql not found"; exit 1; fi', shell=True, stdout=subprocess.PIPE)
-        process.wait()
-        if process.returncode == 1:
-            sys.exit(1)
-
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -c "CREATE DATABASE ' + DATABASE + ';"')
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "CREATE USER ' + USER + ' WITH PASSWORD \'' + PASSWORD + '\';"')
         exec('psql -h ' + HOST + ' -p ' + str(PORT) + ' -d ' + DATABASE + ' -c "GRANT ALL PRIVILEGES ON DATABASE ' + DATABASE + ' TO ' + USER + ';"')
