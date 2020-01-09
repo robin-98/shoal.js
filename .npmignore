@@ -7,3 +7,4 @@ agent.log
 deploy-agent.json
 sardines-config.json
 sardines-services-*.json
+deploy-repository.json
