@@ -63,6 +63,9 @@ try:
   if args.providers != 'sardines-service-provider-http' and (providerSettings is None or len(providers) != len(providerSettings)):
     raise Exception('Providers and drivers and settings for the providers must be provided and paired')
   elif args.providers == 'sardines-service-provider-http' and providerSettings is None:
+    public_addr = target_addr
+    if ipaddr is not None:
+      public_addr = ipaddr
     providerSettings = [{
       "host": "0.0.0.0",
       "port": 8080,
@@ -80,7 +83,7 @@ try:
       "syslog": True,
       "public": {
           "protocol": "http",
-          "host": target_addr,
+          "host": public_addr,
           "root": "/",
           "port": 8080,
           "driver": "sardines-service-driver-http"
