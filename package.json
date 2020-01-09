@@ -39,7 +39,7 @@
         "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
     },
     "scripts": {
-        "genConfig": "./bin/gen_sardines_config.py --repo-deploy-file deploy-repository.json --config-file ./sardines-config.json --application sardines --platform nodejs",
+        "genConfig": "if [ -f ./bin/gen_sardines_config.py ];then ./bin/gen_sardines_config.py --repo-deploy-file deploy-repository.json --config-file ./sardines-config.json --application sardines --platform nodejs; fi",
         "genDefaultAgentDeployPlan": "./bin/deploy_host.py --repo-deploy-file ./deploy-repository.json --only-gen-agent-deploy-plan True --agent-deploy-plan-file ./deploy-agent.json --agent-heartbeat-interval-sec 5",
         "init": "sardines-init --bypass-remote-services --config=./sardines-config.json",
         "build": "npm run clear && npm run clearSardinesCache && npm run compileAgent && npm run compileRepo && npm run init && npm run publishRepositoryInterfaces && tsc --build conf/tsconfig.json && npm run reverseCompile && npm run makeExec",
@@ -61,7 +61,7 @@
         "testDeployService": "./bin/deploy_service.py --application dietitian --providers ./test/providers-dietitian.json --init-parameters ./test/init-params-dietitian.json --repo-deploy-plan deploy-repository.json",
         "testRemoveService": "./lib/manager/manageRepository.js --remove-service-runtimes --hosts=rin@mba-robin deploy-repository.json",
         "stop": "if [ `ps -ef|grep 'node lib/index.js'|grep -v grep|grep -v 'npm run stop'|wc -l` -gt 0 ];then ps -ef|grep 'node lib/index.js'|grep -v grep|grep -v 'npm run stop'; ps -ef|grep 'node lib/index.js'|grep -v grep|grep -v 'npm run stop'|awk '{print $2}'|xargs kill -9; echo 'sardines stopped'; fi",
-        "prepublish": "npm run clear && npm run clearPackages && npm run build"
+        "prepublish": "npm run clear && npm run clearPackages && npm run genConfig && npm run build"
     },
     "type": "lib/index.d.ts",
     "version": "1.0.0"

@@ -1,5 +1,5 @@
 WORKSPACE=sardines.shoal
-if [ `ps -ef|grep 'node lib/deployServices.js ./sardines-services-agent.json ./deploy-agent.json'|
+if [ `ps -ef|grep 'node lib/index.js ./sardines-services-agent.json ./deploy-agent.json'|
         grep -v grep|grep -v 'bash -c'|grep -v 'sh -c'|
         wc -l|awk '{print $1}'` -eq 0 ];then 
   cd $WORKSPACE
