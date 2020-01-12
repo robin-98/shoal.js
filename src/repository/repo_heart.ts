@@ -9,7 +9,7 @@ const calcWorkload = (sysload: SystemLoad):number => {
 export class RepositoryHeart extends RepositoryDataStructure {
   [key:string]: any
   private intervalHeartbeat: any = null
-  protected heartbeatTimespan: number = 1 * 1000
+  protected heartbeatTimespan: number = 60 * 1000 // 1 minutes
   protected heartbeatCount: number = 0
   protected jobsInHeart: {[name: string]:{ 
     name: string 
@@ -22,12 +22,12 @@ export class RepositoryHeart extends RepositoryDataStructure {
       this.appendJobInHeart('removeOutDatePerfData')
     }
     if (typeof this.checkPendingServices === 'function') {
-      this.appendJobInHeart('checkPendingServices', 1, 10)
+      this.appendJobInHeart('checkPendingServices', 0, 2)
     }
     this.startHeart()
   }
 
-  protected appendJobInHeart(jobName: string, startRound: number = 3600, intervalCounts: number = 3600) {
+  protected appendJobInHeart(jobName: string, startRound: number = 10, intervalCounts: number = 60) {
     if (jobName && !this.jobsInHeart[jobName] && typeof this[jobName] === 'function') {
       this.jobsInHeart[jobName] = {
         name: jobName,

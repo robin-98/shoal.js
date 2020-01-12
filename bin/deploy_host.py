@@ -22,7 +22,7 @@ argParser.add_argument('--providers', type=str, required=False, default='sardine
 argParser.add_argument('--provider-settings', type=str, required=False, default='null', help='Provider settings for the providers, in JSON format, must be an array')
 argParser.add_argument('--only-gen-agent-deploy-plan', type=bool, required=False, default=False, help='Only generate deploy plan of agent on target host')
 argParser.add_argument('--agent-deploy-plan-file', type=str, required=False, default='./tmp-deploy-agent.json', help='Agent deploy plan file path')
-argParser.add_argument('--agent-heartbeat-interval-sec', type=int, required=False, default=58, help='Heartbeat interval in seconds')
+argParser.add_argument('--agent-heartbeat-interval-sec', type=int, required=False, default=59, help='Heartbeat interval in seconds')
 args = argParser.parse_args()
 
 (host, entries, drivers, repoProviders) = readDeployPlan(args.repo_deploy_file)
