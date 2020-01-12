@@ -135,3 +135,8 @@ export const removeServiceRuntime = async(data: any, token: string) => {
     return await unifyAsyncHandler('repository', 'remove service runtime on hosts', repoInst!.removeServiceRuntime, repoInst)(data, token) 
 }
 
+export const updateHostIPAddress = async(data: any, token: string) => {
+    if (!data) throw unifyErrMesg('invalid data', 'repository', 'updateHostIPAddress')
+    checkRepoStatus()
+    return await unifyAsyncHandler('repository', 'update host ip address', repoInst!.updateHostIPAddress, repoInst)(data, token) 
+}

@@ -110,7 +110,15 @@ export class RepositoryRuntime extends RepositoryDeployment {
     return null
   }
 
-  async removeServiceRuntime(data: {hosts?: string[], applications?: string[], modules?: string[], services?: string[], versions?: string[]}) {
+  async removeServiceRuntime(data: {hosts?: string[], applications?: string[], modules?: string[], services?: string[], versions?: string[]}, token: string) {
+    const tokenObj = await this.validateToken(token, true)
+    if (!tokenObj || !tokenObj.account_id) throw 'invalid token'
+    if ((this.owner && tokenObj.account_id === this.owner.id) || (this.shoalUser && tokenObj.account_id === this.shoalUser.id)){
+      
+    } else {
+      throw 'unauthorized account'
+    }
+
     const hostlist = data.hosts
     if (hostlist && hostlist.length) {
       for (let hoststr of hostlist) {
@@ -188,5 +196,79 @@ export class RepositoryRuntime extends RepositoryDeployment {
     }
 
     return true
+  }
+
+  async updateHostIPAddress(data: {host: string, ipv4?: string, ipv6?: string}, token: string) {
+    const tokenObj = await this.validateToken(token, true)
+    if (!tokenObj || !tokenObj.account_id) throw 'invalid token'
+    if ((this.owner && tokenObj.account_id === this.owner.id) || (this.shoalUser && tokenObj.account_id === this.shoalUser.id)){
+      
+    } else {
+      throw 'unauthorized account'
+    }
+
+    if (!data || !data.host || typeof data.host !== 'string' || data.host.indexOf(',')>=0) throw 'invalid host data'
+    if (!data.ipv4 && !data.ipv6) throw 'invalid address data'
+
+    // get host instance in database
+    let hostObj:any = null
+    if (data.host.indexOf('@') > 0) {
+      const pair = data.host.split('@')
+      if (!pair || !pair.length || pair.length !== 2) throw 'invalid host data'
+      hostObj = await this.db!.get('resource', {account: pair[0], name: pair[1]})
+    } else {
+      hostObj = await this.db!.get('resource', {id: data.host})
+    }
+    if (!hostObj) throw 'can not find target host'
+
+    // prepare host address data to be updated, and remember the previous values
+    if (!hostObj.address) hostObj.address = {}
+    let previousAddr = Object.assign({}, hostObj.address)
+    if (data.ipv4) {
+      hostObj.address.ipv4 = data.ipv4
+    }
+    if (data.ipv6) {
+      hostObj.address.ipv6 = data.ipv6
+    }
+
+    // go through providers of the host
+    const updateProvider = (pvdr: any) => {
+      if (!pvdr) return
+      let providerInfo: any = null
+      if (pvdr.providerSettings && pvdr.providerSettings.public) {
+        providerInfo = pvdr.providerSettings.public
+      } else if (pvdr.host) {
+        providerInfo = pvdr
+      }
+      if (!providerInfo) return
+
+      if (providerInfo.host === previousAddr.ipv4) {
+        providerInfo.host = data.ipv4
+      } else if (providerInfo.host === previousAddr.ipv6) {
+        providerInfo.host = data.ipv6
+      }
+    }
+    let providers = []
+    if (hostObj.providers && Array.isArray(hostObj.providers) && hostObj.providers.length) providers = hostObj.providers
+    else if (hostObj.providers) providers.push(hostObj.providers)
+    for(let i=0; i<providers.length; i++) {
+      let pvdr = providers[i]
+      updateProvider(pvdr)
+    }
+
+    // update host address in database
+    await this.db!.set('resource', hostObj, {id: hostObj.id})
+
+    // go through providers of service runtimes
+    let serviceRuntimeList = await this.db!.get('service_runtime', {resource_id: hostObj.id})
+    if (!serviceRuntimeList) return {hosts: 1, serviceRuntimes: 0}
+    if (!Array.isArray(serviceRuntimeList)) serviceRuntimeList = [serviceRuntimeList]
+    for (let i = 0; i<serviceRuntimeList; i++) {
+      let rt = serviceRuntimeList[i]
+      updateProvider(rt.provider_raw)
+      updateProvider(rt.provider_info)
+      await this.db!.set('service_runtime', rt, {id: rt.id})
+    }
+    return {hosts: 1, serviceRuntimes: serviceRuntimeList.length}
   }
 }
