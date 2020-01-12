@@ -222,7 +222,18 @@ export class RepositoryRuntime extends RepositoryDeployment {
     if (!hostObj) throw 'can not find target host'
 
     // prepare host address data to be updated, and remember the previous values
-    if (!hostObj.address) hostObj.address = {}
+    if (typeof hostObj.address === 'string'
+    && hostObj.address[0]=== '(' && hostObj.address[hostObj.address.length-1] === ')') {
+      hostObj.address = hostObj.address.substr(1, hostObj.address.length-2)
+      const pair = hostObj.address.split(',')
+      hostObj.address = {
+        ipv4: pair[0],
+        ssh_port: pair[1],
+        ipv6: pair[2]
+      }
+    } else {
+      hostObj.address = {}
+    }
     let previousAddr = Object.assign({}, hostObj.address)
     if (data.ipv4) {
       hostObj.address.ipv4 = data.ipv4
@@ -257,8 +268,9 @@ export class RepositoryRuntime extends RepositoryDeployment {
     }
 
     // update host address in database
-    await this.db!.set('resource', null, {id: hostObj.id})
-    await this.db!.set('resource', hostObj)
+    await this.db!.set('resource', hostObj, {id: hostObj.id})
+    // await this.db!.set('resource', null, {id: hostObj.id})
+    // await this.db!.set('resource', hostObj)
 
     // go through providers of service runtimes
     let serviceRuntimeList = await this.db!.get('service_runtime', {resource_id: hostObj.id})
