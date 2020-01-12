@@ -14,7 +14,7 @@ export class RepositoryHealthy extends RepositoryRuntime {
       await this.db!.set(table, {
         status: Sardines.Runtime.RuntimeStatus.pending
       }, {
-        last_active_on: `lt:${Date.now()-6000*2}`,
+        last_active_on: `lt:${Date.now()-6000*3}`,
         status: Sardines.Runtime.RuntimeStatus.ready
       })
     }
