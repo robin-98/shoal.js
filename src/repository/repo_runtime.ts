@@ -257,7 +257,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
     }
 
     // update host address in database
-    await this.db!.set('resource', hostObj, {id: hostObj.id})
+    await this.db!.set('resource', null, {id: hostObj.id})
+    await this.db!.set('resource', hostObj)
 
     // go through providers of service runtimes
     let serviceRuntimeList = await this.db!.get('service_runtime', {resource_id: hostObj.id})
