@@ -79,7 +79,7 @@
                         "host": "localhost",
                         "port": 5432,
                         "database": "sardines_test",
-                        "schema": "test",
+                        "schema": "shoal",
                         "user": "sardines",
                         "password": "Sardines2019"
                     }
