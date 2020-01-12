@@ -12,13 +12,12 @@
     "dependencies": {
         "@types/node": "^12.6.9",
         "@types/semver": "^6.0.1",
-        "@types/systeminformation": "^3.23.1",
         "sardines-built-in-services": "*",
         "sardines-compile-time-tools": "*",
         "sardines-core": "*",
         "semver": "^6.3.0",
         "simple-git": "^1.126.0",
-        "systeminformation": "^4.14.4",
+        "systeminformation": "^4.19.0",
         "typescript": "^3.5.3"
     },
     "description": "A built-in service provider for sardines.js",
