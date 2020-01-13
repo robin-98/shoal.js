@@ -244,20 +244,24 @@ export class RepositoryRuntime extends RepositoryDeployment {
 
     // go through providers of the host
     const updateProvider = (pvdr: any) => {
-      if (!pvdr) return
+      let updated = false
+      if (!pvdr) return updated
       let providerInfo: any = null
       if (pvdr.providerSettings && pvdr.providerSettings.public) {
         providerInfo = pvdr.providerSettings.public
       } else if (pvdr.host) {
         providerInfo = pvdr
       }
-      if (!providerInfo) return
+      if (!providerInfo) return updated
 
       if (providerInfo.host === previousAddr.ipv4) {
+        updated = true
         providerInfo.host = data.ipv4
       } else if (providerInfo.host === previousAddr.ipv6) {
+        updated = true
         providerInfo.host = data.ipv6
       }
+      return updated
     }
     let providers = []
     if (hostObj.providers && Array.isArray(hostObj.providers) && hostObj.providers.length) providers = hostObj.providers
@@ -268,27 +272,23 @@ export class RepositoryRuntime extends RepositoryDeployment {
     }
 
     // update host address in database
-    console.log('===========DEBUG BEGIN=============')
-    let updateRes = await this.db!.set('resource', hostObj, {id: hostObj.id})
-    console.log('update resource result:', updateRes)
-    // await this.db!.set('resource', null, {id: hostObj.id})
-    // await this.db!.set('resource', hostObj)
+    await this.db!.set('resource', hostObj, {id: hostObj.id})
 
     // go through providers of service runtimes
     let serviceRuntimeList = await this.db!.get('service_runtime', {resource_id: hostObj.id}, null, 0)
     if (!serviceRuntimeList) return {hosts: 1, serviceRuntimes: 0}
     if (!Array.isArray(serviceRuntimeList)) serviceRuntimeList = [serviceRuntimeList]
-    console.log('previous host address:', previousAddr)
+
+    let updatedRTCnt = 0
     for (let i = 0; i<serviceRuntimeList.length; i++) {
       let rt = serviceRuntimeList[i]
-      console.log('old service runtime provider_info:', utils.inspect(rt.provider_info))
-      updateProvider(rt.provider_raw)
-      updateProvider(rt.provider_info)
-      console.log('new service runtime provider_info:', utils.inspect(rt.provider_info))
-      updateRes = await this.db!.set('service_runtime', rt, {id: rt.id})
-      console.log('update service runtime result:', updateRes)
+      let updatedRaw = updateProvider(rt.provider_raw)
+      let updatedInfo = updateProvider(rt.provider_info)
+      if (updatedInfo || updatedRaw) {
+        await this.db!.set('service_runtime', rt, {id: rt.id})
+        updatedRTCnt++
+      }
     }
-    console.log('===========DEBUG END===============')
-    return {hosts: 1, serviceRuntimes: serviceRuntimeList.length}
+    return {hosts: 1, serviceRuntimes: updatedRTCnt}
   }
 }
