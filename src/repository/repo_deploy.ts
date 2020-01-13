@@ -503,7 +503,7 @@ export class RepositoryDeployment extends RepositoryConnect {
       resource_id: resourceInDB.id,
       status: `ne:${Sardines.Runtime.RuntimeStatus.ready}`,
       application: 'ne:sardines'
-    })
+    }, null, 0)
 
     let targetServiceRuntimeList: any[]= []
     if (pendingServiceRuntimes && !Array.isArray(pendingServiceRuntimes)) {
@@ -573,6 +573,7 @@ export class RepositoryDeployment extends RepositoryConnect {
           if (!deployJobs.length) return 
           const job = deployJobs[0]
           try {
+            console.log(`[repository] deploying pending services to host[${resourceInDB.account}@${resourceInDB.name}#${resourceInDB.id}]...`)
             const res = await self.deployServices(job, '', true)
             if (!res || !Array.isArray(res) || !res.length) {
               console.log(`[repository][reloadPendingServices] response from agent [${resourceInDB.id}]:`, utils.inspect(res))

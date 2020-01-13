@@ -12,6 +12,7 @@ export class SardinesAgentInit {
     providers: {},
     hostId: '',
     perf: null,
+    heartbeatRounds: 0
   }
 
   constructor() {
@@ -31,6 +32,7 @@ export class SardinesAgentInit {
       }
       const load = await getCurrentLoad(hostInfo.name, hostInfo.account)
       if (this.agentState.hostId && load) {
+        this.agentState.heartbeatRounds++
         try {
           load.resource_id = this.agentState.hostId
           const serviceRuntimeList: string[] = []
@@ -38,9 +40,9 @@ export class SardinesAgentInit {
             Array.prototype.push.apply(serviceRuntimeList, this.agentState.providers[pvdrkey].serviceRuntimeIds)
           }
           const res = await RepositoryClient.exec('resourceHeartbeat', {load, runtimes: serviceRuntimeList})
-          console.log('[Agent] repo response of heartbeat:', res)
+          console.log(`[Agent] repo response of heartbeat at <${new Date()}> in round ${this.agentState.heartbeatRounds}:`, res)
         } catch(e) {
-          console.log('[Agent] ERROR while sending load data:', e)
+          console.log(`[Agent] ERROR of heartbeat at <${new Date()}> in round ${this.agentState.heartbeatRounds}:`, e)
         }
       }
 

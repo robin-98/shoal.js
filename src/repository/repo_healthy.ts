@@ -5,7 +5,7 @@ export class RepositoryHealthy extends RepositoryRuntime {
   constructor() {
     super()
     if (typeof this.checkOnlineStatus === 'function') {
-      this.appendJobInHeart('checkOnlineStatus', 60, 60)
+      this.appendJobInHeart('checkOnlineStatus', 1, 2)
     }
   }
 
@@ -14,7 +14,7 @@ export class RepositoryHealthy extends RepositoryRuntime {
       await this.db!.set(table, {
         status: Sardines.Runtime.RuntimeStatus.pending
       }, {
-        last_active_on: `lt:${Date.now()-6000*3}`,
+        last_active_on: `lt:${Date.now()-60*1000*3}`,
         status: Sardines.Runtime.RuntimeStatus.ready
       })
     }

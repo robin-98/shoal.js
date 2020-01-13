@@ -89,7 +89,6 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         throw utils.unifyErrMesg(`Can not parse service definitions`, 'shoal', 'deploy')
     }
     const sourceFiles: Map<string,{[key: string]: any}> = new Map()
-    console.log('[service deployer] appMap:', appMap)
     // Begin to deploy applications
     const serviceRuntimeCache: {[key:string]:Sardines.Runtime.Service} = {}
     

@@ -12,4 +12,5 @@ export interface AgentState {
   providers: Sardines.Runtime.ProviderCache
   hostId: string|null
   perf: SystemLoad|null
+  heartbeatRounds: number
 }

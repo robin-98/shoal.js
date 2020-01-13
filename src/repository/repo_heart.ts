@@ -9,7 +9,7 @@ const calcWorkload = (sysload: SystemLoad):number => {
 export class RepositoryHeart extends RepositoryDataStructure {
   [key:string]: any
   private intervalHeartbeat: any = null
-  protected heartbeatTimespan: number = 60 * 1000 // 1 minutes
+  protected heartbeatTimespan: number = 30 * 1000 // half a minute
   protected heartbeatCount: number = 0
   protected jobsInHeart: {[name: string]:{ 
     name: string 
@@ -22,7 +22,7 @@ export class RepositoryHeart extends RepositoryDataStructure {
       this.appendJobInHeart('removeOutDatePerfData')
     }
     if (typeof this.checkPendingServices === 'function') {
-      this.appendJobInHeart('checkPendingServices', 0, 2)
+      this.appendJobInHeart('checkPendingServices', 2, 10)  // begin from 1 minute after startup, and will be invoked every 5 minutes
     }
     this.startHeart()
   }
@@ -58,9 +58,9 @@ export class RepositoryHeart extends RepositoryDataStructure {
           const begin = Date.now()
           await this[jobName].apply(this)
           const end = Date.now()
-          console.log(`sardines repository job [${jobName}] done in No.${this.heartbeatCount} heartbeat in ${end-begin}ms`)
+          console.log(`[repository] heartbeat job [${jobName}] done at <${new Date()}> in round ${this.heartbeatCount} in ${end-begin}ms`)
         } catch (e) {
-          console.error(`Error of sardines repository heartbeat:`, e)
+          console.error(`[repository] Error of sardines repository heartbeat at <${new Date()}> in round ${this.heartbeatCount}:`, e)
         }
       }
     }
@@ -119,7 +119,7 @@ export class RepositoryHeart extends RepositoryDataStructure {
         }, 0)
       }
     } catch (e) {
-      console.error(`Error while checking pending services:`, e)
+      console.error(`[repository] Error while checking pending services:`, e)
     }
   }
 }
