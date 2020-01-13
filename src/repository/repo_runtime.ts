@@ -278,11 +278,12 @@ export class RepositoryRuntime extends RepositoryDeployment {
     let serviceRuntimeList = await this.db!.get('service_runtime', {resource_id: hostObj.id}, null, 0)
     if (!serviceRuntimeList) return {hosts: 1, serviceRuntimes: 0}
     if (!Array.isArray(serviceRuntimeList)) serviceRuntimeList = [serviceRuntimeList]
+    console.log('previous host address:', previousAddr)
     for (let i = 0; i<serviceRuntimeList.length; i++) {
       let rt = serviceRuntimeList[i]
+      console.log('old service runtime provider_info:', utils.inspect(rt.provider_info))
       updateProvider(rt.provider_raw)
       updateProvider(rt.provider_info)
-      console.log('previous address:', previousAddr)
       console.log('new service runtime provider_info:', utils.inspect(rt.provider_info))
       updateRes = await this.db!.set('service_runtime', rt, {id: rt.id})
       console.log('update service runtime result:', updateRes)
