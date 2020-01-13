@@ -280,7 +280,12 @@ export class RepositoryRuntime extends RepositoryDeployment {
       let rt = serviceRuntimeList[i]
       updateProvider(rt.provider_raw)
       updateProvider(rt.provider_info)
-      await this.db!.set('service_runtime', rt, {id: rt.id})
+      console.log('===========DEBUG BEGIN=============')
+      console.log('previous address:', previousAddr)
+      console.log('new service runtime:', utils.inspect(rt))
+      const updateRes = await this.db!.set('service_runtime', rt, {id: rt.id})
+      console.log('update result:', updateRes)
+      console.log('===========DEBUG END===============')
     }
     return {hosts: 1, serviceRuntimes: serviceRuntimeList.length}
   }
