@@ -268,7 +268,9 @@ export class RepositoryRuntime extends RepositoryDeployment {
     }
 
     // update host address in database
-    await this.db!.set('resource', hostObj, {id: hostObj.id})
+    console.log('===========DEBUG BEGIN=============')
+    let updateRes = await this.db!.set('resource', hostObj, {id: hostObj.id})
+    console.log('update resource result:', updateRes)
     // await this.db!.set('resource', null, {id: hostObj.id})
     // await this.db!.set('resource', hostObj)
 
@@ -280,13 +282,12 @@ export class RepositoryRuntime extends RepositoryDeployment {
       let rt = serviceRuntimeList[i]
       updateProvider(rt.provider_raw)
       updateProvider(rt.provider_info)
-      console.log('===========DEBUG BEGIN=============')
       console.log('previous address:', previousAddr)
-      console.log('new service runtime:', utils.inspect(rt))
-      const updateRes = await this.db!.set('service_runtime', rt, {id: rt.id})
-      console.log('update result:', updateRes)
-      console.log('===========DEBUG END===============')
+      console.log('new service runtime provider_info:', utils.inspect(rt.provider_info))
+      updateRes = await this.db!.set('service_runtime', rt, {id: rt.id})
+      console.log('update service runtime result:', updateRes)
     }
+    console.log('===========DEBUG END===============')
     return {hosts: 1, serviceRuntimes: serviceRuntimeList.length}
   }
 }
