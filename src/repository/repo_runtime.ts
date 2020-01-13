@@ -273,7 +273,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
     // await this.db!.set('resource', hostObj)
 
     // go through providers of service runtimes
-    let serviceRuntimeList = await this.db!.get('service_runtime', {resource_id: hostObj.id})
+    let serviceRuntimeList = await this.db!.get('service_runtime', {resource_id: hostObj.id}, null, 0)
     if (!serviceRuntimeList) return {hosts: 1, serviceRuntimes: 0}
     if (!Array.isArray(serviceRuntimeList)) serviceRuntimeList = [serviceRuntimeList]
     for (let i = 0; i<serviceRuntimeList; i++) {
