@@ -33,10 +33,15 @@ manage-sardines-repo --create-account=sardines_shoal_admin:password_for_shao_adm
 Affections:
 1. all associated service runtimes with the public IP in its provider info
 
-Solution:
-1. Remove the affected service runtimes
-```
-manage-sardines-repo --remove-service-runtime-on-hosts=rin@mba-robin deploy-repository-dev.json
-```
+Solutions:
+1. Re-deploy host and service runtimes
+    1. Remove the affected service runtimes
+    ```
+    ./lib/manager/manageRepository --remove-service-runtime-on-hosts=rin@mba-robin deploy-repository-dev.json
+    ```
+    2. Re-deploy those services if needed
 
-2. Re-deploy those services if needed
+2. Update host IP address directly, and service runtimes which used the old host IP address would be updated as well
+    ```
+    ./lib/manager/manageRepository.js --update-resource --host=rin@nw-test03 --ipv4=10.183.197.143 deploy-repository.json
+    ```
