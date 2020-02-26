@@ -188,8 +188,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
               query.version = data.versions
             }
 
-            await this.db!.set('service_runtime', null, query)
-            console.warn('[reposiotry] service runtimes data removed no matter the host agent alive or not')
+            const res = await this.db!.set('service_runtime', null, query)
+            console.warn('[reposiotry] service runtimes data removed no matter the host agent alive or not:', res)
           }
         }
       }

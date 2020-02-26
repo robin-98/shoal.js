@@ -21,7 +21,7 @@ For cloud software developing, ***it's not until you fly that you fall***. What 
     4. *Why a bridged network is necessary: if without the bridged network, applications can only be tested within the same machine of the VMs. Otherwise, with a bridged network, applications can be tested anywhere within the same physical network.*
 3. Setup *`single-direct`* SSH trust relationships between the `Shoal` host and `Application` hosts
 4. Setup trusted SSH public keys on `github` for the *Shoal* and *Application* hosts
-5. Setup *`PostgreSQL Server`* on the database host.
+5. Setup *`PostgreSQL Server`* on the database host, [reference](https://tecadmin.net/install-postgresql-server-on-ubuntu/)
     1. change data file directory to the mounted extra virtual hard disk
     2. modify file *`/etc/postgresql/10/main/postgresql.conf`*, append a line: `listen_address = *`
     3. modify file *`/etc/postgresql/10/main/pg_hba.conf`*:
@@ -32,6 +32,13 @@ For cloud software developing, ***it's not until you fly that you fall***. What 
     1. Stop `Nginx`
     2. Install `pgadmin4` and `pgadmin-apache2`: [reference](https://www.howtoforge.com/how-to-install-postgresql-and-pgadmin4-on-ubuntu-1804-lts/)
     3. Enable pgadmin4 with the command: `a2enable pgadmin4`
+7. Install & setup *`Redis Server`* on the database host, [refernece](https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-redis-on-ubuntu-18-04)
+    1. Modify config file `/etc/redis/redis.conf`:
+        1. change `supervised no` to `supervised systemd`
+        2. change `bind 127.0.0.1 ::1` to `bind 0.0.0.0 ::1`
+        3. change `requirepass ...` to `requirepass Startup@2020`: set the password for redis as `Startup@2020`
+    2. Restart Redis service: `sudo systemctl restart redis.service`
+    3. Test connection from public ip address using command: `redis-cli -h <public ip address> -p 6379`
 
 ## Sardines Platform
 1. Prepare the most important file ***`deploy-repository.json`***, which can be derived from the file *`deploy-repository-example.json`* in the source code of `sardines.shoal.js`
