@@ -22,6 +22,7 @@ export interface ServiceDeploymentTargets {
   useAllProviders: boolean
   providers?: any[]
   initParams?: any[]
+  tags?: string[]
 }
 
 export interface ExtendedServiceIdentity extends Sardines.ServiceIdentity {
@@ -156,6 +157,7 @@ export class RepositoryDeployment extends RepositoryConnect {
     const version = targets.version
     const initParams = targets.initParams
     const providers = targets.providers
+    const tags = targets.tags || []
     const res = []
     // application should be single
     if (application && 
@@ -283,6 +285,12 @@ export class RepositoryDeployment extends RepositoryConnect {
             }
           }
         }
+
+        // set the tags
+        if (tags && tags.length) {
+          deployPlan.tags = tags
+        }
+
         // TODO: push to target host
         // using sardines-core invoke to request
         deployPlanAndDescObjForHost.push({deployPlan, serviceDescObj})
@@ -301,7 +309,7 @@ export class RepositoryDeployment extends RepositoryConnect {
     else return res
   }
 
-  async parseDeployResult(runtimeOfApps: Sardines.Runtime.DeployResult):Promise<{deployResult: DeployResultCache, providers: ProviderCache}> {
+  async parseDeployResult(runtimeOfApps: Sardines.Runtime.DeployResult):Promise<{deployResult: DeployResultCache, providers: ProviderCache, tags?: string[]}> {
     const cacheApps: DeployResultCache = {}
     const pvdrCache: {[pvdrkey: string]: Sardines.ProviderDefinition} = {}
     for (let pvdr of runtimeOfApps.providers) {
@@ -383,7 +391,14 @@ export class RepositoryDeployment extends RepositoryConnect {
         }
       }
     }
-    return {deployResult: cacheApps, providers: pvdrCache}
+    const result: {deployResult: DeployResultCache, providers: ProviderCache, tags?: string[]} = {
+      deployResult: cacheApps, 
+      providers: pvdrCache
+    }
+    if (runtimeOfApps.tags && runtimeOfApps.tags.length) {
+      result.tags = runtimeOfApps.tags
+    }
+    return result
   }
 
   async uploadServiceDeployResult(runtimeOfApps: Sardines.Runtime.DeployResult, token: string, bypassToken: boolean = false):Promise<Sardines.Runtime.ServiceRuntimeUpdateResult> {
@@ -400,6 +415,7 @@ export class RepositoryDeployment extends RepositoryConnect {
     const dpres = await this.parseDeployResult(runtimeOfApps)
     const cacheApps = dpres.deployResult
     const cachePvdr = dpres.providers
+    const tags = dpres.tags
 
     // Save service runtime into database by apps and entries
     const result: Sardines.Runtime.ServiceRuntimeUpdateResult = {}
@@ -461,6 +477,9 @@ export class RepositoryDeployment extends RepositoryConnect {
           }
           if (settingsForProvider) {
             runtimeData.settings_for_provider = settingsForProvider
+          }
+          if (tags) {
+            runtimeData.tags = tags
           }
           // save service runtime in db
           try {

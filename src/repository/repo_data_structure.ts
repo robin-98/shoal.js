@@ -69,6 +69,7 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         module: 'VARCHAR(300)',
         name: 'VARCHAR(100)',
         version: 'VARCHAR(20)', // can only be '*' for sardines repository services
+        tags: 'VARCHAR(100)[]',
         create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
         deploy_job_ticket: 'VARCHAR(100)',

@@ -52,6 +52,7 @@ export const deployServices = async (targetServices: any, deployPlan: any, agent
       throw utils.unifyErrMesg('services are not correctly compiled', 'shoal', 'start')
   }
   const deployRes:Sardines.Runtime.DeployResult|null = await serviceDeployer.deploy(deployPlan, [targetServices], agent.providers, true)
+  if (deployPlan.tags) deployRes.tags = deployPlan.tags
   let repoRes = null
   if (send && deployRes) {
       repoRes = await sendDeployResultToRepository(deployRes, agent)

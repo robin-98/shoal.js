@@ -10,6 +10,7 @@ argParser = argparse.ArgumentParser(description = 'command-line-tool to deploy s
 argParser.add_argument('--application', type=str, required=True, help='Application name')
 argParser.add_argument('--services', type=str, required=False, help='Services to be deployed, seperate by ",". For each service, use ":" to specify its module:name:version, or in module:name format; For entire module, can use module:* or module:*:<version number>')
 argParser.add_argument('--version', type=str, required=False, default='*', help='Target version')
+argParser.add_argument('--tags', type=str, required=False, help='Custom tags for the services, seperated by ","')
 argParser.add_argument('--hosts', type=str, required=False, help='Target host name or list of hosts, seperated by ",", format as "<user name>@<host name>". If omitted then automatically select one')
 argParser.add_argument('--repo-deploy-plan', type=str, required=True, help='Deploy plan file path for repository')
 argParser.add_argument('--use-all-providers', type=bool, required=False, default=True, help='if use all the available providers on target hosts')
@@ -22,6 +23,7 @@ application = args.application
 services = args.services
 version = args.version
 hosts = args.hosts
+tags = args.tags
 
 # prepare services
 class Service:
@@ -87,6 +89,10 @@ data = {
   "version": version,
   "useAllProviders": args.use_all_providers
 }
+
+if tags is not None and tags != '':
+  data["tags"] = tags.split(',')
+
 if args.providers is not None:
   if os.path.isfile(args.providers):
     with open(args.providers) as f:
