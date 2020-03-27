@@ -425,11 +425,6 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
 
         // Compose general query for the application
         let serviceQuery = Object.assign({}, service)
-        let version = serviceQuery.version
-        if (!version || version === '*' || version.toLowerCase() === 'latest') {
-            version = '*'
-            delete serviceQuery.version
-        }
         let appName = serviceQuery.application
         if (appName) delete serviceQuery.application
         if (!serviceQuery.application_id) {
@@ -446,6 +441,18 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
         }
         if (serviceQuery.module === '*') {
             delete serviceQuery.module
+        }
+        let version = serviceQuery.version
+        if (!version || version === '*' || version.toLowerCase() === 'latest') {
+            // find the latest version number
+            delete serviceQuery.version
+            let latestVersion = await this.db!.get('service', serviceQuery, {create_on: -1}, 1, 0, ['version'])
+            if (latestVersion) {
+                version = latestVersion
+                serviceQuery.version = latestVersion
+            } else {
+                version = '*'
+            }
         }
 
         // to query entire module
