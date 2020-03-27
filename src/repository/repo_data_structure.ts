@@ -446,9 +446,9 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
         if (!version || version === '*' || version.toLowerCase() === 'latest') {
             // find the latest version number
             delete serviceQuery.version
-            let latestVersion = await this.db!.get('service', serviceQuery, {create_on: -1}, 1, 0, ['version'])
+            let latestVersion = await this.db!.get('service', serviceQuery, {create_on: -1}, 1, 0, ['version', 'create_on'])
             if (latestVersion) {
-                version = latestVersion
+                version = latestVersion.version
                 serviceQuery.version = latestVersion
             } else {
                 version = '*'
