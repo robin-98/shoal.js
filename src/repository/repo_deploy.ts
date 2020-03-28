@@ -150,7 +150,6 @@ export class RepositoryDeployment extends RepositoryConnect {
 
   public async deployServices(targets: ServiceDeploymentTargets, token: string, bypassToken: boolean = false) {
     if (!bypassToken) await this.validateShoalUser(token)
-    
     const hosts = targets.hosts
     const application = targets.application
     const services = targets.services 
@@ -158,12 +157,22 @@ export class RepositoryDeployment extends RepositoryConnect {
     const initParams = targets.initParams
     const providers = targets.providers
     const tags = targets.tags || []
-    const res = []
+    const res: any[] = []
+    const error: {message?: any, ctx?: any} = {
+      message: null
+    }
+    const genResult = () => {
+      const result: {error?: any, res?: any|any[]} = {}
+      if (error.message) result.error = error
+      if (res.length) result.res = res
+      return result
+    }
     // application should be single
     if (application && 
       (application.indexOf(';')>=0 || application.indexOf(',')>=0 || application.indexOf(':')>=0)
       ) {
-        throw 'Multiple application mode is not supported while deploy services'
+        error.message = 'Multiple application mode is not supported while deploy services'
+        return genResult()
     }
 
     // CAUTION: deployment is devided by source repositories/versions,
@@ -177,11 +186,12 @@ export class RepositoryDeployment extends RepositoryConnect {
       // deploy all services of that application, 
       // use 'version' as target version of all services
       let serviceInsts = await this.queryService(serviceQuery, token, true, 0)
+
       if (serviceInsts && !Array.isArray(serviceInsts)) {
         serviceList.push(serviceInsts)
       } else if(serviceInsts) {
         serviceList = <Service[]>serviceInsts
-      }
+      } 
     } else {
       // let serviceDescObj: Sardines.ServiceDescriptionFile = {
       //   services: [],
@@ -203,9 +213,18 @@ export class RepositoryDeployment extends RepositoryConnect {
       }
     }
 
+    if (!serviceList.length) {
+        error.message = 'ERROR when deploying services: can not get information of these services in repository database'
+        return genResult()
+    }
+
     // Generate deploy plan for distinct sources and versions
     const dplist = await this.generateDeployPlanFromBunchOfServices(serviceList)
-    if (!dplist || !dplist.length) return null
+
+    if (!dplist || !dplist.length) {
+      error.message = 'ERROR when deploying services on repository: Can not generate valid deploy plan'
+      return genResult()
+    }
     
     // Query target hosts and setup providers
     const hostInfoList = []
@@ -301,12 +320,24 @@ export class RepositoryDeployment extends RepositoryConnect {
       if (agentRes.res) {
         res.push({hostInfo, res: agentRes.res})
       } else if (agentRes.error) {
-        console.log('[repository][deployServices] Error while requesting agent:', agentRes.error)
+        const errMsg = '[repository][deployServices] Error while deploying services on remote host [' + hostInfo.name + ']'
+        res.push({hostInfo, error: {
+          message: errMsg,
+          ctx: agentRes.error
+        }})
+        console.error(errMsg)
+        error.message = 'Error while deploying services on remote hosts'
+        error.ctx = (error.ctx && typeof error.ctx === 'number') 
+                    ? error.ctx + 1
+                    : 1
       }
     }
 
-    if (!res.length) return null
-    else return res
+    if (!res.length) {
+      error.message = 'ERROR when deploying services on repository: Deployment failed on all target hosts'
+      console.error(error.message)
+    }
+    return genResult()
   }
 
   async parseDeployResult(runtimeOfApps: Sardines.Runtime.DeployResult):Promise<{deployResult: DeployResultCache, providers: ProviderCache, tags?: string[]}> {
@@ -342,7 +373,7 @@ export class RepositoryDeployment extends RepositoryConnect {
       }
       
       if (!serviceRuntime || !serviceRuntime.length) {
-        console.error(`ERROR: can not log empty service runtime for application [${app}]`)
+        console.error(`ERROR when parsing deployment results: can not log empty service runtime for application [${app}]`)
         continue
       }
       for (let runtime of serviceRuntime) {

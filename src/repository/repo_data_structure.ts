@@ -447,13 +447,19 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
             // find the latest version number
             delete serviceQuery.version
             let latestVersion = await this.db!.get('service', serviceQuery, {create_on: -1}, 1, 0, ['version', 'create_on'])
+            console.log('raw query result of latest version:', latestVersion)
+            if (Array.isArray(latestVersion) && latestVersion.length) {
+                latestVersion = latestVersion[0]
+            }
+            console.log('latest version:', latestVersion)
             if (latestVersion) {
                 version = latestVersion.version
-                serviceQuery.version = latestVersion
+                serviceQuery.version = latestVersion.version
             } else {
                 version = '*'
             }
         }
+        console.log('service query:', serviceQuery)
 
         // to query entire module
         let queryResult: any = null
