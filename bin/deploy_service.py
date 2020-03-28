@@ -11,7 +11,13 @@ argParser.add_argument('--application', type=str, required=True, help='Applicati
 argParser.add_argument('--services', type=str, required=False, help='Services to be deployed, seperate by ",". For each service, use ":" to specify its module:name:version, or in module:name format; For entire module, can use module:* or module:*:<version number>')
 argParser.add_argument('--version', type=str, required=False, default='*', help='Target version')
 argParser.add_argument('--tags', type=str, required=False, help='Custom tags for the services, seperated by ","')
-argParser.add_argument('--hosts', type=str, required=False, help='Target host name or list of hosts, seperated by ",", format as "<user name>@<host name>". If omitted then automatically select one')
+argParser.add_argument(
+  '--hosts',
+  nargs="+",
+  type=str,
+  required=False, 
+  help='Target host name or list of hosts, seperated by space, format as "<user name>@<host name>". If omitted then automatically select one'
+)
 argParser.add_argument('--repo-deploy-plan', type=str, required=True, help='Deploy plan file path for repository')
 argParser.add_argument('--use-all-providers', type=bool, required=False, default=True, help='if use all the available providers on target hosts')
 argParser.add_argument('--providers', type=str, required=False, help='Provider settings for the providers, in JSON format, must be an array, but can NOT be used for multiple hosts, this argument is only allowed for one host')
@@ -66,12 +72,7 @@ if services is not None:
     services.append(Service(serviceStr, version).JSON())
 
 # prepare hosts
-if hosts is not None:
-  if ',' in hosts:
-    hosts = hosts.split(',')
-  else:
-    hosts = [hosts]
-else:
+if hosts is None:
   hosts = []
 
 # Invoke repository service to deploy services
