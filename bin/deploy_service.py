@@ -8,9 +8,9 @@ from lib.read_deploy_plan import readDeployPlan
 
 argParser = argparse.ArgumentParser(description = 'command-line-tool to deploy sardines service on any remote host')
 argParser.add_argument('--application', type=str, required=True, help='Application name')
-argParser.add_argument('--services', type=str, required=False, help='Services to be deployed, seperate by ",". For each service, use ":" to specify its module:name:version, or in module:name format; For entire module, can use module:* or module:*:<version number>')
+argParser.add_argument('--services', nargs="+", type=str, required=False, help='Services to be deployed, seperate by ",". For each service, use ":" to specify its module:name:version, or in module:name format; For entire module, can use module:* or module:*:<version number>')
 argParser.add_argument('--version', type=str, required=False, default='*', help='Target version')
-argParser.add_argument('--tags', type=str, required=False, help='Custom tags for the services, seperated by ","')
+argParser.add_argument('--tags', nargs="+", type=str, required=False, help='Custom tags for the services, seperated by ","')
 argParser.add_argument(
   '--hosts',
   nargs="+",
@@ -66,10 +66,10 @@ class Service:
 
 
 if services is not None:
-  serviceStrings = services.split(',')
-  services = []
-  for serviceStr in serviceStrings:
-    services.append(Service(serviceStr, version).JSON())
+  tmpServiceList = []
+  for serviceStr in services:
+    tmpServiceList.append(Service(serviceStr, version).JSON())
+  services = tmpServiceList
 
 # prepare hosts
 if hosts is None:
@@ -91,8 +91,8 @@ data = {
   "useAllProviders": args.use_all_providers
 }
 
-if tags is not None and tags != '':
-  data["tags"] = tags.split(',')
+if tags is not None:
+  data["tags"] = tags
 
 if args.providers is not None:
   if os.path.isfile(args.providers):

@@ -459,7 +459,6 @@ export class RepositoryDataStructure extends PostgresTempleteAccount {
                 version = '*'
             }
         }
-        console.log('service query:', serviceQuery)
 
         // to query entire module
         let queryResult: any = null
