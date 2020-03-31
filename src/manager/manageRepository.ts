@@ -24,6 +24,7 @@ if (params.help) {
         --modules                     : module list to be removed in the applications ; '*' indicates all the modules
         --services                    : service list to be removed in the modules, '*' indicates all the services
         --versions                    : version list to be removed of the services, '*' indicates all the versions
+        --tags                        : tag list to be removed of the services, '*' indicates all the tags
     --update-resource                 : mode: update resource info
         --host                        : id or <user@hostname> of the host to be updated
         --ipv4                        : new IPv4 address for the host
@@ -49,20 +50,19 @@ const manager = async() => {
 
     // Remove service runtime on host
     if (params['remove-service-runtimes']) {
-      if (!params['hosts'] || typeof params['hosts'] !== 'string') {
-        throw 'unsupported parameter for service runtime removing on hosts'
-      }
-      const hostlist = params['hosts'].split(',')
+      const hostlist = (typeof params['hosts'] === 'string') ? params['hosts'].split(',') : ['*']
       const applist = (typeof params['applications'] === 'string') ? params['applications'].split(',') : ['*']
       const modulelist = (typeof params['modules'] === 'string') ? params['modules'].split(',') : ['*']
       const servicelist = (typeof params['services'] === 'string') ? params['services'].split(',') : ['*']
       const versionlist = (typeof params['versions'] === 'string') ? params['versions'].split(',') : ['*']
+      const taglist = (typeof params['tags'] === 'string') ? params['tags'].split(',') : ['*']
       return await RepositoryClient.exec('removeServiceRuntime', {
         hosts: hostlist,
         applications: applist,
         modules: modulelist,
         services: servicelist,
-        versions: versionlist
+        versions: versionlist,
+        tags: taglist
       })
     }
 

@@ -565,7 +565,10 @@ export class RepositoryDeployment extends RepositoryConnect {
     // all service runtimes may spread on many applications, versions, hosts, providers
     const targetCache: {[key:string]: ServiceDeploymentTargets} = {}
     for (let serviceRuntimeInDB of targetServiceRuntimeList) {
-      const cachekey = `${serviceRuntimeInDB.resource_id}:${serviceRuntimeInDB.application}:${serviceRuntimeInDB.version}:${utils.getKey(serviceRuntimeInDB.provider_info)}`
+      let cachekey = `${serviceRuntimeInDB.resource_id}:${serviceRuntimeInDB.application}:${serviceRuntimeInDB.version}:${utils.getKey(serviceRuntimeInDB.provider_info)}`
+
+      // Add tags to seperate bunches
+      cachekey += `:${(serviceRuntimeInDB.tags||[]).sort().join('-')}`
 
       if (!targetCache[cachekey]) targetCache[cachekey] = {
         application: serviceRuntimeInDB.application,
@@ -574,7 +577,8 @@ export class RepositoryDeployment extends RepositoryConnect {
         version: serviceRuntimeInDB.version,
         useAllProviders: false,
         providers: [serviceRuntimeInDB.provider_raw],
-        initParams: []
+        initParams: [],
+        tags: serviceRuntimeInDB.tags
       }
       const target = targetCache[cachekey]
       target.services.push({

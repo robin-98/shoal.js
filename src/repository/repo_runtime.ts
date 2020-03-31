@@ -110,7 +110,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
     return null
   }
 
-  async removeServiceRuntime(data: {hosts?: string[], applications?: string[], modules?: string[], services?: string[], versions?: string[]}, token: string) {
+  async removeServiceRuntime(data: {hosts?: string[], applications?: string[], modules?: string[], services?: string[], versions?: string[], tags?: string[]}, token: string) {
     const tokenObj = await this.validateToken(token, true)
     if (!tokenObj || !tokenObj.account_id) throw 'invalid token'
     if ((this.owner && tokenObj.account_id === this.owner.id) || (this.shoalUser && tokenObj.account_id === this.shoalUser.id)){
@@ -119,7 +119,29 @@ export class RepositoryRuntime extends RepositoryDeployment {
       throw 'unauthorized account'
     }
 
-    const hostlist = data.hosts
+    let hostlist = data.hosts
+    // Query host list according to attributes of service runtimes
+    if (!hostlist || !hostlist.length || hostlist.indexOf('*')>=0) {
+      const hostQuery:any = {
+      }
+      if (data.applications && data.applications.length && data.applications.indexOf('*')<0) {
+        hostQuery.application = data.applications
+      }
+      if (data.modules && data.modules.length && data.modules.indexOf('*')<0) {
+        hostQuery.module = data.modules
+      }
+      if (data.services && data.services.length && data.services.indexOf('*')<0) {
+        hostQuery.service = data.services
+      }
+      if (data.versions && data.versions.length && data.versions.indexOf('*')<0) {
+        hostQuery.version = data.versions
+      }
+      if (data.tags && data.tags.length && data.tags.indexOf('*')<0) {
+        hostQuery.tags = data.tags
+      }
+      hostlist = await this.db!.get('service_runtime', hostQuery, null, 0, 0, ['id'])
+    }
+
     if (hostlist && hostlist.length) {
       for (let hoststr of hostlist) {
         const pair = hoststr.split('@')
