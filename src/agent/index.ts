@@ -1,7 +1,8 @@
 import { Resource } from './agent_init'
-import { ServiceDeployPlan, SardinesAgentRuntime } from './agent_runtime'
+import { ServiceDeployPlan } from './agent_runtime'
+import { SardinesAgentRuntime as SardinesAgent } from './agent_runtime'
 
-const agent = new SardinesAgentRuntime()
+const agent = new SardinesAgent()
 
 export const agentState = agent.agentState
 
@@ -16,3 +17,5 @@ export const startHost = async (hostInfo: Resource, heartbeatInterval: number = 
 export const removeServices = async(data: any) => {
   return await agent.removeServices(data)
 }
+
+
