@@ -11,7 +11,6 @@ import * as path from 'path'
 import * as proc from 'process'
 import * as fs from 'fs'
 import { RepositoryClient } from 'sardines-core'
-import { parseDeployPlanFile } from './deployer/deployer_utils'
 import * as deployer from './deployer'
 import { agentState } from './agent'
 
@@ -32,19 +31,6 @@ export interface DeployJobResult {
     res: Sardines.Runtime.DeployResult
 }
 
-export const deployServicesByFiles = async (serviceDefinitionFile: string, serviceDeployPlanFile: string, send: boolean = true) => {
-    const serviceFilePath = path.resolve(proc.cwd(), serviceDefinitionFile)
-    if (fs.existsSync(serviceFilePath)) {
-        const targetServices = JSON.parse(fs.readFileSync(serviceFilePath).toString())
-        const deployPlan = parseDeployPlanFile(path.resolve(proc.cwd(), serviceDeployPlanFile))
-        const res = await deployer.deployServices(targetServices, deployPlan, agentState, send)
-        if (res) return res
-        else throw 'deploy failed'
-    } else {
-        throw `can not access service description file [${serviceFilePath}]`
-    }
-}
-
 const {files} = utils.parseArgs()
 if (files && files.length >= 2 && files.length % 2 === 0) {
     const jobs = async() => {
@@ -53,7 +39,7 @@ if (files && files.length >= 2 && files.length % 2 === 0) {
             const serviceDefinitionFile = files[i]
             const serviceDeployPlanFile = files[i+1]
             try {
-                const {deployResult} = await deployServicesByFiles(serviceDefinitionFile, serviceDeployPlanFile, false)
+                const {deployResult} = await deployer.deployServicesByFiles(serviceDefinitionFile, serviceDeployPlanFile, agentState, false)
                 if (!deployResult) {
                     throw `can not deploy service in file [${serviceDeployPlanFile}]`
                 } else {

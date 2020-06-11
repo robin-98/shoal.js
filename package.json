@@ -7,7 +7,7 @@
         "manage-sardines-repo": "lib/manager/manageRepository.js"
     },
     "bugs": {
-        "url": "https://github.com/robin-98/sardines.shoal.http.js/issues"
+        "url": "https://github.com/robin-98/sardines.shoal.js/issues"
     },
     "dependencies": {
         "@types/node": "^12.6.9",
@@ -23,7 +23,7 @@
     },
     "description": "A built-in service provider for sardines.js",
     "devDependencies": {},
-    "homepage": "https://github.com/robin-98/sardines.shoal.http.js#readme",
+    "homepage": "https://github.com/robin-98/sardines.shoal.js#readme",
     "keywords": [
         "Free-to-Decouple",
         "distributed",
@@ -36,7 +36,7 @@
     "name": "sardines-shoal",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/robin-98/sardines.shoal.http.js.git"
+        "url": "git+https://github.com/robin-98/sardines.shoal.js.git"
     },
     "scripts": {
         "genConfig": "if [ -f ./bin/gen_sardines_config.py ];then ./bin/gen_sardines_config.py --repo-deploy-file deploy-repository.json --config-file ./sardines-config.json --application sardines --platform nodejs; fi",

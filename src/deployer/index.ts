@@ -3,6 +3,10 @@ import * as serviceDeployer from './service_deployer'
 import { utils, Sardines } from 'sardines-core'
 import { RepositoryClient } from 'sardines-core'
 import { AgentState } from '../interfaces'
+import { parseDeployPlanFile } from './deployer_utils'
+import * as path from 'path'
+import * as proc from 'process'
+import * as fs from 'fs'
 
 export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime.DeployResult|null|undefined, agent: AgentState) => {
   if (!deployResult) {
@@ -47,11 +51,11 @@ export interface ServiceDeployment {
   repositoryResponse: any
 }
 
-export const deployServices = async (targetServices: any, deployPlan: any, agent: any = {}, send: boolean = false): Promise<ServiceDeployment> => {
+export const deployServices = async (targetServices: any, deployPlan: any, agentState: AgentState, send: boolean = false): Promise<ServiceDeployment> => {
   if (!targetServices) {
       throw utils.unifyErrMesg('services are not correctly compiled', 'shoal', 'start')
   }
-  const deployRes:Sardines.Runtime.DeployResult|null = await serviceDeployer.deploy(deployPlan, [targetServices], agent.providers, true)
+  const deployRes:Sardines.Runtime.DeployResult|null = await serviceDeployer.deploy(deployPlan, [targetServices], agentState.providers, true)
   
   if (deployPlan.tags && deployRes) deployRes.tags = deployPlan.tags
   let repoRes = null
@@ -59,4 +63,18 @@ export const deployServices = async (targetServices: any, deployPlan: any, agent
       repoRes = await sendDeployResultToRepository(deployRes, agent)
   }
   return {deployResult: deployRes, repositoryResponse: repoRes}
+}
+
+// Deploy services by service definition file and service deploy plan file
+export const deployServicesByFiles = async (serviceDefinitionFile: string, serviceDeployPlanFile: string, agentState: AgentState, send: boolean = true) => {
+  const serviceFilePath = path.resolve(proc.cwd(), serviceDefinitionFile)
+  if (fs.existsSync(serviceFilePath)) {
+      const targetServices = JSON.parse(fs.readFileSync(serviceFilePath).toString())
+      const deployPlan = parseDeployPlanFile(path.resolve(proc.cwd(), serviceDeployPlanFile))
+      const res = await deployServices(targetServices, deployPlan, agentState, send)
+      if (res) return res
+      else throw 'deploy failed'
+  } else {
+      throw `can not access service description file [${serviceFilePath}]`
+  }
 }
