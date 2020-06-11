@@ -47,8 +47,8 @@ export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime
 }
 
 export interface ServiceDeployment {
-  deployResult: any
-  repositoryResponse: any
+  deployResult: Sardines.Runtime.DeployResult|null
+  repositoryResponse: Sardines.Runtime.ServiceRuntimeUpdateResult|null
 }
 
 export const deployServices = async (targetServices: any, deployPlan: any, agentState: AgentState, send: boolean = false): Promise<ServiceDeployment> => {
@@ -60,7 +60,7 @@ export const deployServices = async (targetServices: any, deployPlan: any, agent
   if (deployPlan.tags && deployRes) deployRes.tags = deployPlan.tags
   let repoRes = null
   if (send && deployRes) {
-      repoRes = await sendDeployResultToRepository(deployRes, agent)
+      repoRes = await sendDeployResultToRepository(deployRes, agentState)
   }
   return {deployResult: deployRes, repositoryResponse: repoRes}
 }

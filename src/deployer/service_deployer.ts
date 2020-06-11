@@ -99,6 +99,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         if (!appMap!.has(app.name)) continue
 
         // Cache the registered local service
+        // TODO: it's un-reasonable to cache all services without knowing the runtime result of registering
         for (let serviceDef of serviceDefinitions) {
             if (serviceDef.application !== appName) continue
             const cache = Sardines.Transform.fromServiceDescriptionFileToServiceCache(serviceDef, {booleanValue: true, version: app.version})
@@ -109,8 +110,8 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         if (!serviceMap) continue
 
         // prepare the source code
-        // for local files
         if (app.code && app.code.locationType === Sardines.LocationType.file && app.code.location) {
+            // for local files
             codeBaseDir = path.resolve(proc.cwd(), app.code.location)
         } else if (app.version && app.version !== '*' && app.code 
             && app.code.locationType === Sardines.LocationType.git
@@ -147,17 +148,19 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                 if (!fs.existsSync(serviceCodeFile)) {
                     throw utils.unifyErrMesg(`Can not find source code file for service [${serviceId}] at [${serviceCodeFile}]`, 'shoal', 'deploy')
                 }
+                // load source file into memory cache
                 if (!sourceFiles.has(serviceCodeFile)) {
                     // if (appName !== 'sardines' && require.cache[require.resolve(serviceCodeFile)]) {
                     //     delete require.cache[require.resolve(serviceCodeFile)]
                     // }
                     sourceFiles.set(serviceCodeFile, require(serviceCodeFile))
                 }
+                // load service source code into runtime function
                 const handler = sourceFiles!.get(serviceCodeFile)![service.name]
                 if (!handler) {
                     throw utils.unifyErrMesg(`Can not get handler from source code file [${serviceCodeFile}] for service [${serviceId}]`, 'shoal', 'deploy')
                 }
-                // prepare to register service
+                // prepare to register service on all provider instances indicated in the deploy-plan file
                 const serviceRuntime: Sardines.Runtime.Service = {
                     identity: {
                         application: appName,
@@ -176,12 +179,11 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                 while (!name.done) {
                     const providerName = name.value
                     const providerInst = providerInstances.get(providerName)
-                    // Get additional settings for the service on the provider
+                    // find out the additional settings for the service on the provider
                     let providerSettings = providerSettingsCache.get(providerName)
                     name = providerNames.next()
                     let additionalServiceSettings:any = null
-
-                    // additionalServiceSettings is serviceSettings for provider
+                    // the additionalServiceSettings is serviceSettings for provider
                     if (providerSettings!.applicationSettings && Array.isArray(providerSettings!.applicationSettings)) {
                         for (let appSettingsForProvider of providerSettings!.applicationSettings) {
                             let commonSettings = appSettingsForProvider.commonSettings? Object.assign({}, appSettingsForProvider.commonSettings):{}
@@ -198,9 +200,10 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     }
                     // register service on the provider instance
                     try {
-                        const tmpService = utils.mergeObjects({}, service)
+                        const tmpService:Sardines.Service = utils.mergeObjects({}, service)
                         tmpService.application = appName
                         tmpService.version = appVersion
+                        // the very action of registering service on an instance of provider
                         const serviceInPvdr = await providerInst.registerService(tmpService, handler, additionalServiceSettings)
                         if (verbose) {
                             console.log(`[service deployer] service [${appName}:${serviceId}:${appVersion}] has been registered`)
@@ -208,7 +211,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
 
                         const providerInfo = providerSettings!.providerSettings.public
                         const pvdrkey = utils.getKey(providerInfo)
-                        Sardines.Transform.pushServiceIntoProviderCache(providerCache, pvdrkey, providerInfo, tmpService, serviceInPvdr)
+                        Sardines.Transform.pushServiceIntoProviderCache(providerCache, pvdrkey, providerInfo, <Sardines.ServiceIdentity>tmpService, serviceInPvdr)
                         // after registeration, service data structure will be changed:
                         // the arguments will have additional properties
                         // such as 'position' property for http provider
@@ -263,11 +266,12 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
                     if (fs.existsSync(sourceCodeFile)) {
                         if (serviceRuntimeSettings.arguments) {
                             // const handler = require(sourceCodeFile)[service.name]
+                            // get the handler instance from the memory cache, which organized by source files
                             const handler = sourceFiles.get(sourceCodeFile)![service.name]
                             await handler(...serviceRuntimeSettings.arguments)
-                            const srInst = serviceRuntimeCache[`${appName}:${service.module}:${service.name}:${appVersion}`]
-                            if (srInst) {
-                                srInst.arguments = serviceRuntimeSettings.arguments
+                            const svInst = serviceRuntimeCache[`${appName}:${service.module}:${service.name}:${appVersion}`]
+                            if (svInst) {
+                                svInst.arguments = serviceRuntimeSettings.arguments
                             }
                         }
                     }
@@ -276,6 +280,7 @@ export const deploy = async (deployPlan: Sardines.DeployPlan, serviceDefinitions
         }
     }
     // send 'result' to repository as service runtimes
+    // and let the repository to log the result into its database
     return result
 }
 
