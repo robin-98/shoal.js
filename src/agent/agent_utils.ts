@@ -1,5 +1,5 @@
 import { Sardines } from 'sardines-core'
-import { getRepositoryEntiryAddressesFromDeployPlan } from '../deployer/deployer_utils'
+import { getRepositoryEntiryAddressesFromDeployPlan } from '../deployer'
 
 export const getRepositoryShoalUser = (repoDeployPlan: Sardines.DeployPlan): {name: string, password: string}|null => {
   let account: {name: string, password: string} | null = null

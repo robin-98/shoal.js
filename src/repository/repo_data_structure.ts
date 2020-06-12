@@ -186,6 +186,23 @@ export const extraPostgresDBStruct: PostgresDatabaseStructure = {
         name: 'VARCHAR(200)',
         account: 'VARCHAR(50)',
         type: 'VARCHAR(100)'
+    },
+    access_point: {
+        id: 'UUID PRIMARY KEY DEFAULT uuid_generate_v4()',
+        create_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        last_access_on: 'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
+        service_runtime_id: 'UUID',
+        resource_id: 'UUID',
+        type: 'VARCHAR(50)',
+        address: 'VARCHAR(200)',
+        preference: 'VARCHAR(200)',
+        UNIQUE: ['type', 'address']
+    },
+    service_runtime_in_access_point: {
+        service_runtime_id: 'UUID NOT NULL',
+        access_point_id: 'UUID NOT NULL',
+        priority: 'INT DEFAULT 100',
+        UNIQUE: ['service_runtime_id', 'access_point_id']
     }
 }
 

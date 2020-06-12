@@ -140,3 +140,22 @@ export const updateHostIPAddress = async(data: any, token: string) => {
     checkRepoStatus()
     return await unifyAsyncHandler('repository', 'update host ip address', repoInst!.updateHostIPAddress, repoInst)(data, token) 
 }
+
+// access point
+export const registerAccessPoint = async(type: string, address: string, preference: string, token: string) => {
+    if (!type || !address || !preference) throw unifyErrMesg('invalid parameters', 'repository', 'registerAccessPoint')
+    checkRepoStatus()
+    return await unifyAsyncHandler('repository', 'register access point', repoInst!.registerAccessPoint, repoInst)(type, address, preference, token) 
+}
+
+export const removeAccessPoint = async(type: string, address: string, token: string) => {
+    if (!type || !address) throw unifyErrMesg('invalid parameters', 'repository', 'removeAccessPoint')
+    checkRepoStatus()
+    return await unifyAsyncHandler('repository', 'register access point', repoInst!.removeAccessPoint, repoInst)(type, address, token) 
+}
+
+export const operateServiceRuntimeInAccessPoint = async(option: {add?:boolean, remove?:boolean, priority?: number}, arrayOfServiceRuntimeIds: string[], accessPoint: { id?: string, type?: string, address?: string}, token: string) => {
+    if (!option || !arrayOfServiceRuntimeIds || !accessPoint ) throw unifyErrMesg('invalid parameters', 'repository', 'operateServiceRuntimeInAccessPoint')
+    checkRepoStatus()
+    return await unifyAsyncHandler('repository', 'register access point', repoInst!.operateServiceRuntimeInAccessPoint, repoInst)(option, arrayOfServiceRuntimeIds, accessPoint, token) 
+}

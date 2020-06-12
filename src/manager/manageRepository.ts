@@ -1,5 +1,5 @@
 import { RepositoryClient, utils} from 'sardines-core'
-import { parseDeployPlanFile } from '../deployer/deployer_utils'
+import { parseDeployPlanFile } from '../deployer'
 
 import * as fs from 'fs'
 import * as proc from 'process'

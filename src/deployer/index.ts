@@ -8,6 +8,11 @@ import * as path from 'path'
 import * as proc from 'process'
 import * as fs from 'fs'
 
+export { 
+  getRepositoryEntiryAddressesFromDeployPlan,
+  parseDeployPlanFile
+} from './deployer_utils'
+
 export const sendDeployResultToRepository = async(deployResult: Sardines.Runtime.DeployResult|null|undefined, agent: AgentState) => {
   if (!deployResult) {
       throw 'invalid deploy result of services'
