@@ -8,7 +8,7 @@ from lib.read_deploy_plan import readDeployPlan
 
 argParser = argparse.ArgumentParser(description = 'command-line-tool to deploy sardines service on any remote host')
 argParser.add_argument('--application', type=str, required=True, help='Application name')
-argParser.add_argument('--services', nargs="+", type=str, required=False, help='Services to be deployed, seperate by ",". For each service, use ":" to specify its module:name:version, or in module:name format; For entire module, can use module:* or module:*:<version number>')
+argParser.add_argument('--services', nargs="+", type=str, required=False, help='Services to be deployed. For each service, use ":" to specify its module:name:version, or in module:name format; For entire module, can use module:* or module:*:<version number>. Version number is omittable')
 argParser.add_argument('--version', type=str, required=False, default='*', help='Target version')
 argParser.add_argument('--tags', nargs="+", type=str, required=False, help='Custom tags for the services, seperated by ","')
 argParser.add_argument(
@@ -20,8 +20,8 @@ argParser.add_argument(
 )
 argParser.add_argument('--repo-deploy-plan', type=str, required=True, help='Deploy plan file path for repository')
 argParser.add_argument('--use-all-providers', type=bool, required=False, default=True, help='if use all the available providers on target hosts')
-argParser.add_argument('--providers', type=str, required=False, help='Provider settings for the providers, in JSON format, must be an array, but can NOT be used for multiple hosts, this argument is only allowed for one host')
-argParser.add_argument('--init-parameters', type=str, required=False, help='Init parameters for services which need to be init, in JSON format, must be an array, and the sequence is guaranteed while deploying, also for one host usage')
+argParser.add_argument('--providers', type=str, required=False, help='Provider settings file path or Provider settings json object for the providers, in JSON format, must be an array, but can NOT be used for multiple hosts, this argument is only allowed for one host')
+argParser.add_argument('--init-parameters', type=str, required=False, help='Init parameters file path or Init parameters json array for services which need to be init, in JSON format, must be an array, and the sequence is guaranteed while deploying, also for one host usage')
 
 args = argParser.parse_args()
 
