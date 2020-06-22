@@ -118,7 +118,7 @@ export const updateResourceInfo = async(data: any, token: string) => {
 }
 
 export const deployServices = async(data: any, token: string) => {
-    if (!data) throw unifyErrMesg('invalid data', 'repository', 'deployService')
+    if (!data) throw unifyErrMesg(`invalid data ${data}`, 'repository', 'deployService')
     checkRepoStatus()
     return await unifyAsyncHandler('repository', 'deploy services', repoInst!.deployServices, repoInst)(data, token) 
 }
