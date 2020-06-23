@@ -118,7 +118,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
     } else {
       throw 'unauthorized account'
     }
-
+    let result = 'No service runtime has been removed'
+    let hostIdList = []
     let hostlist = data.hosts
     // Query host list according to attributes of service runtimes
     if (!hostlist || !hostlist.length || hostlist.indexOf('*')>=0) {
@@ -161,6 +162,10 @@ export class RepositoryRuntime extends RepositoryDeployment {
                                                        }, null, 1, 0, ['id'])
           if (hostInst) hostId = hostInst.id
         }
+        hostIdList.push({
+          hoststr: hoststr,
+          hostId: hostId
+        })
         
         if (hostId) {
           // TODO: communicate with target hosts and shutdown those services on their agents
@@ -170,17 +175,31 @@ export class RepositoryRuntime extends RepositoryDeployment {
             console.log(`[repository][removeServiceRuntime] going to remove service runtimes on host [${hostId}]:`)
             console.log(agentData)
             const agentResponse = await this.invokeHostAgent({id: hostId}, 'removeServices', agentData)
+            console.log('[repository][removeServiceRuntime] agent response:', agentResponse)
             if (agentResponse.res && Array.isArray(agentResponse.res) && agentResponse.res.length) {
               const dbres = await this.db!.set('service_runtime', null, {id: agentResponse.res})
-              console.log(`[repository] database response of removing service runtimes:`, dbres)
+              console.log(`[repository][removeServiceRuntime] database response of removing service runtimes:`, dbres)
+              result = dbres
             } else if (agentResponse.error) {
+              console.log('[repository][removeServiceRuntime] agent returned an error:', agentResponse.error)
               throw agentResponse.error
+            } else {
+              console.log('[repository][removeServiceRuntime] agent returned an empty response:', agentResponse.res)
+              throw 'empty response from agent'
             }
           } catch (e) {
-            console.warn('[repository] Error while requesting agent to remove service runtimes', e)
+            console.log('[repository][removeServiceRuntime] Error while requesting agent to remove service runtimes', e)
+            console.log('[repository][removeServiceRuntime] going to remove records in database')
             const query: any = { resource_id: hostId }
             if (data.applications && data.applications.length && data.applications.indexOf('*') >= 0) {
-              const applicationList = await this.db!.get('service_runtime', query, null, 0, 0, ['application'])
+              let applicationList = await this.db!.get('service_runtime', query, null, 0, 0, ['application'])
+              applicationList = applicationList.map((item: any) => {
+                if (typeof item === 'object' && typeof item.application === 'string') {
+                  return item.application
+                } else {
+                  return item
+                }
+              })
               if (applicationList && Array.isArray(applicationList) && applicationList.length) {
                 if (applicationList.indexOf('sardines') >= 0) {
                   applicationList.splice(applicationList.indexOf('sardines'),1)
@@ -209,15 +228,20 @@ export class RepositoryRuntime extends RepositoryDeployment {
             if (data.versions && data.versions.length && data.versions.indexOf('*') < 0) {
               query.version = data.versions
             }
-
+            console.log('[reposiotry][removeServiceRuntime] removing database records using query:',query)
             const res = await this.db!.set('service_runtime', null, query)
-            console.warn('[reposiotry] service runtimes data removed no matter the host agent alive or not:', res)
+            console.log('[reposiotry] service runtimes data removed no matter the host agent alive or not:', res)
+            result = res
           }
         }
       }
     }
 
-    return true
+    return {
+      result,
+      input: data,
+      hosts: hostIdList
+    }
   }
 
   async updateHostIPAddress(data: {host: string, ipv4?: string, ipv6?: string}, token: string) {

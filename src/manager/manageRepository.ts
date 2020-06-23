@@ -35,6 +35,7 @@ if (params.help) {
 }
 
 const manager = async() => {
+  console.log('sardines repository manager is loaded with parameters:', params)
   try {
     setupRepoClient()
 
@@ -45,7 +46,9 @@ const manager = async() => {
       }
       let newUsername = params['create-account'].split(':')[0]
       let newPassword = params['create-account'].split(':')[1]
-      return await RepositoryClient.createUser(newUsername, newPassword)
+      const result = await RepositoryClient.createUser(newUsername, newPassword)
+      console.log('result of create user:', result)
+      return result
     }
 
     // Remove service runtime on host
@@ -56,7 +59,7 @@ const manager = async() => {
       const servicelist = (typeof params['services'] === 'string') ? params['services'].split(',') : ['*']
       const versionlist = (typeof params['versions'] === 'string') ? params['versions'].split(',') : ['*']
       const taglist = (typeof params['tags'] === 'string') ? params['tags'].split(',') : ['*']
-      return await RepositoryClient.exec('removeServiceRuntime', {
+      const result = await RepositoryClient.exec('removeServiceRuntime', {
         hosts: hostlist,
         applications: applist,
         modules: modulelist,
@@ -64,6 +67,8 @@ const manager = async() => {
         versions: versionlist,
         tags: taglist
       })
+      console.log('result of remove service runtimes:', result)
+      return result
     }
 
     // update host ip address
@@ -71,7 +76,9 @@ const manager = async() => {
       const host = params['host']
       const ipv4 = params['ipv4']
       const ipv6 = params['ipv6']
-      return await RepositoryClient.exec('updateHostIPAddress', {host, ipv4, ipv6})
+      const result = await RepositoryClient.exec('updateHostIPAddress', {host, ipv4, ipv6})
+      console.log('result of update host IP address:', result)
+      return result
     }
 
   } catch (e) {

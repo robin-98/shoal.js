@@ -22,7 +22,6 @@ argParser.add_argument('--repo-deploy-plan', type=str, required=True, help='Depl
 argParser.add_argument('--use-all-providers', type=bool, required=False, default=True, help='if use all the available providers on target hosts')
 argParser.add_argument('--providers', type=str, required=False, help='Provider settings file path or Provider settings json object for the providers, in JSON format, must be an array, but can NOT be used for multiple hosts, this argument is only allowed for one host')
 argParser.add_argument('--init-parameters', type=str, required=False, help='Init parameters file path or Init parameters json array for services which need to be init, in JSON format, must be an array, and the sequence is guaranteed while deploying, also for one host usage')
-
 args = argParser.parse_args()
 
 application = args.application
@@ -94,23 +93,31 @@ data = {
 if tags is not None:
   data["tags"] = tags
 
-if args.providers is not None:
-  if os.path.isfile(args.providers):
-    with open(args.providers) as f:
-      data["providers"] = json.load(f)
-      f.close()
-  else:
+if args.providers is not None and not os.path.isfile(args.providers):
+  print('loading providers JSON string:', args.providers)
+  try:
     data["providers"] = json.loads(args.providers)
-
-if args.init_parameters is not None:
-  if os.path.isfile(args.init_parameters):
-    with open(args.init_parameters) as f:
-      data["initParams"] = json.load(f)
-      f.close()
-  else:
+  except Exception as e:
+    print('ERROR:', e)
+    print('--providers error when trying to load json string', args.providers)
+    sys.exit(1)
+    
+if args.init_parameters is not None and not os.path.isfile(args.init_parameters):
+  print('loading init parameter JSON string:', args.init_parameters)
+  try:
     data["initParams"] = json.loads(args.init_parameters)
+  except Exception as e:
+    print('ERROR:', e)
+    print('--init-parameters error when trying to load json string', args.init_parameters)
+    sys.exit(1)
 
 cmd += " --data='" + json.dumps(data) + "'"
+
+if args.providers is not None and os.path.isfile(args.providers):
+  cmd += " --provider-settings-file=" + args.providers
+    
+if args.init_parameters is not None and os.path.isfile(args.init_parameters):
+  cmd += " --init-parameters-file" + args.init_parameters
 
 print(cmd)
 exitCode = os.system(cmd)
