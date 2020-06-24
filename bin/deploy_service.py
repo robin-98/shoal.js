@@ -117,7 +117,7 @@ if args.providers is not None and os.path.isfile(args.providers):
   cmd += " --provider-settings-file=" + args.providers
     
 if args.init_parameters is not None and os.path.isfile(args.init_parameters):
-  cmd += " --init-parameters-file" + args.init_parameters
+  cmd += " --init-parameters-file=" + args.init_parameters
 
 print(cmd)
 exitCode = os.system(cmd)

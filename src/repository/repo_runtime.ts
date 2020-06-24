@@ -140,7 +140,7 @@ export class RepositoryRuntime extends RepositoryDeployment {
       if (data.tags && data.tags.length && data.tags.indexOf('*')<0) {
         hostQuery.tags = data.tags
       }
-      hostlist = await this.db!.get('service_runtime', hostQuery, null, 0, 0, ['id'])
+      hostlist = await this.db!.get('service_runtime', hostQuery, null, 0, 0, ['resource_id'])
     }
 
     if (!Array.isArray(hostlist) && hostlist) {
