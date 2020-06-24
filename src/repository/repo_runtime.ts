@@ -143,7 +143,11 @@ export class RepositoryRuntime extends RepositoryDeployment {
       hostlist = await this.db!.get('service_runtime', hostQuery, null, 0, 0, ['id'])
     }
 
-    if (hostlist && hostlist.length) {
+    if (!Array.isArray(hostlist) && hostlist) {
+      hostlist = [hostlist]
+    }
+
+    if (hostlist && hostlist.length && Array.isArray(hostlist)) {
       for (let hoststr of hostlist) {
         const pair = hoststr.split('@')
         if (!pair || pair.length > 2) {
