@@ -166,8 +166,8 @@ export class RepositoryRuntime extends RepositoryDeployment {
                                                        }, null, 1, 0, ['id'])
           if (hostInst) hostId = hostInst.id
         }
-        hostIdList.push({
-          hoststr: hoststr,
+        hostIdList.push(hoststr === hostId ? {hostId: hostId} : {
+          host: hoststr,
           hostId: hostId
         })
         
